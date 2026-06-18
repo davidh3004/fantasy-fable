@@ -1,0 +1,385 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AuthAlert } from "@/components/auth/auth-alert";
+import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/game/format";
+import { deletePlayer, savePlayer } from "@/app/(app)/admin/actions";
+import { POSITION_ORDER, type Position } from "@/lib/game/squad";
+import type { MarketPlayer } from "@/lib/game/queries";
+
+const STATUSES = ["available", "injured", "suspended", "unavailable"] as const;
+
+const selectClass =
+  "h-10 w-full cursor-pointer rounded-lg border border-border bg-card px-2.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50";
+
+type ClubOption = { id: string; name: string };
+
+function normalize(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
+export function PlayersManager({
+  players,
+  clubs,
+}: {
+  players: MarketPlayer[];
+  clubs: ClubOption[];
+}) {
+  const t = useTranslations("admin.players");
+  const tCommon = useTranslations("admin.common");
+  const tPos = useTranslations("positionsShort");
+  const tStatus = useTranslations("team.status");
+
+  const [search, setSearch] = useState("");
+  const [clubFilter, setClubFilter] = useState("all");
+  const [positionFilter, setPositionFilter] = useState<"all" | Position>(
+    "all"
+  );
+  const [editing, setEditing] = useState<MarketPlayer | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [error, setError] = useState<string>();
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(formData: FormData) {
+    startTransition(async () => {
+      const result = await savePlayer({}, formData);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        setError(undefined);
+        setDialogOpen(false);
+        toast.success(tCommon("saved"));
+      }
+    });
+  }
+
+  function openDialog(player: MarketPlayer | null) {
+    setEditing(player);
+    setError(undefined);
+    setDialogOpen(true);
+  }
+
+  const visible = useMemo(() => {
+    const query = normalize(search.trim());
+    return players.filter((p) => {
+      if (clubFilter !== "all" && p.clubId !== clubFilter) return false;
+      if (positionFilter !== "all" && p.position !== positionFilter)
+        return false;
+      if (!query) return true;
+      return normalize(`${p.firstName} ${p.lastName} ${p.clubName}`).includes(
+        query
+      );
+    });
+  }, [players, search, clubFilter, positionFilter]);
+
+  function handleDelete(player: MarketPlayer) {
+    const name = `${player.firstName} ${player.lastName}`;
+    if (!window.confirm(tCommon("confirmDelete", { name }))) return;
+    startTransition(async () => {
+      const result = await deletePlayer(player.id);
+      if (result.error) toast.error(tCommon(`errors.${result.error}`));
+      else toast.success(tCommon("deleted"));
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-44 flex-1">
+          <Search
+            className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("search")}
+            className="h-10 pl-9"
+          />
+        </div>
+        <select
+          value={clubFilter}
+          onChange={(e) => setClubFilter(e.target.value)}
+          className={cn(selectClass, "w-auto")}
+          aria-label={t("filterClub")}
+        >
+          <option value="all">{t("allClubs")}</option>
+          {clubs.map((club) => (
+            <option key={club.id} value={club.id}>
+              {club.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={positionFilter}
+          onChange={(e) =>
+            setPositionFilter(e.target.value as "all" | Position)
+          }
+          className={cn(selectClass, "w-auto")}
+          aria-label={t("filterPosition")}
+        >
+          <option value="all">{t("allPositions")}</option>
+          {POSITION_ORDER.map((pos) => (
+            <option key={pos} value={pos}>
+              {tPos(pos)}
+            </option>
+          ))}
+        </select>
+        <Button onClick={() => openDialog(null)} className="h-10 cursor-pointer">
+          <Plus className="size-4" aria-hidden />
+          {t("new")}
+        </Button>
+      </div>
+
+      <p className="text-sm text-muted-foreground">
+        {t("count", { count: visible.length })}
+      </p>
+
+      <ul className="flex flex-col gap-1.5">
+        {visible.map((player) => (
+          <li
+            key={player.id}
+            className="flex items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-2"
+          >
+            {player.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={player.photoUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="size-9 shrink-0 rounded-full border border-border object-cover object-top"
+              />
+            ) : (
+              <span
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted"
+                aria-hidden
+              >
+                <svg
+                  viewBox="0 0 40 40"
+                  className="size-6 text-muted-foreground"
+                  fill="currentColor"
+                >
+                  <circle cx="20" cy="14" r="7" />
+                  <path d="M6 40c0-9 6.5-14 14-14s14 5 14 14z" />
+                </svg>
+              </span>
+            )}
+            <span
+              className={cn(
+                "w-10 shrink-0 rounded-md px-1 py-0.5 text-center text-xs font-semibold",
+                player.position === "GK" && "bg-yellow-400/15 text-yellow-300",
+                player.position === "DEF" && "bg-cyan-400/15 text-cyan-300",
+                player.position === "MID" &&
+                  "bg-emerald-400/15 text-emerald-300",
+                player.position === "FWD" && "bg-rose-400/15 text-rose-300"
+              )}
+            >
+              {tPos(player.position)}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium">
+                {player.firstName} {player.lastName}
+                {player.status !== "available" && (
+                  <span className="ml-2 rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] uppercase text-red-300">
+                    {tStatus(player.status)}
+                  </span>
+                )}
+              </span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {player.clubName}
+              </span>
+            </span>
+            <span className="shrink-0 text-sm font-semibold tabular-nums">
+              {formatMoney(player.price)}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => openDialog(player)}
+              aria-label={tCommon("edit")}
+              className="cursor-pointer"
+            >
+              <Pencil className="size-4" aria-hidden />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleDelete(player)}
+              aria-label={tCommon("delete")}
+              className="cursor-pointer text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="size-4" aria-hidden />
+            </Button>
+          </li>
+        ))}
+        {visible.length === 0 && (
+          <li className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+            {t("noResults")}
+          </li>
+        )}
+      </ul>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing ? t("editTitle") : t("new")}</DialogTitle>
+          </DialogHeader>
+          <form
+            key={editing?.id ?? "new"}
+            action={handleSubmit}
+            className="flex flex-col gap-3.5"
+          >
+            <input type="hidden" name="id" value={editing?.id ?? ""} />
+            {error && (
+              <AuthAlert variant="error" message={tCommon(`errors.${error}`)} />
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="p-firstName">{t("firstName")}</Label>
+                <Input
+                  id="p-firstName"
+                  name="firstName"
+                  defaultValue={editing?.firstName}
+                  required
+                  className="h-10"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="p-lastName">{t("lastName")}</Label>
+                <Input
+                  id="p-lastName"
+                  name="lastName"
+                  defaultValue={editing?.lastName}
+                  required
+                  className="h-10"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="p-clubId">{t("club")}</Label>
+                <select
+                  id="p-clubId"
+                  name="clubId"
+                  defaultValue={editing?.clubId ?? clubs[0]?.id}
+                  className={selectClass}
+                >
+                  {clubs.map((club) => (
+                    <option key={club.id} value={club.id}>
+                      {club.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="p-position">{t("position")}</Label>
+                <select
+                  id="p-position"
+                  name="position"
+                  defaultValue={editing?.position ?? "MID"}
+                  className={selectClass}
+                >
+                  {POSITION_ORDER.map((pos) => (
+                    <option key={pos} value={pos}>
+                      {tPos(pos)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="p-price">{t("price")}</Label>
+                <Input
+                  id="p-price"
+                  name="price"
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  defaultValue={editing ? (editing.price / 10).toFixed(1) : "5.0"}
+                  required
+                  className="h-10 tabular-nums"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="p-status">{t("status")}</Label>
+                <select
+                  id="p-status"
+                  name="status"
+                  defaultValue={editing?.status ?? "available"}
+                  className={selectClass}
+                >
+                  {STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {tStatus(status)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="p-photoUrl">{t("photoUrl")}</Label>
+              <Input
+                id="p-photoUrl"
+                name="photoUrl"
+                defaultValue={editing?.photoUrl ?? ""}
+                placeholder="https://..."
+                className="h-10"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              {editing?.photoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={editing.photoUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="size-12 shrink-0 rounded-full border border-border object-cover object-top"
+                />
+              )}
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <Label htmlFor="p-photoFile">{tCommon("uploadImage")}</Label>
+                <Input
+                  id="p-photoFile"
+                  name="photoFile"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="h-10 cursor-pointer pt-2 text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {tCommon("uploadHint")}
+                </p>
+              </div>
+            </div>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="mt-1 h-11 cursor-pointer font-semibold"
+            >
+              {isPending && (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              )}
+              {tCommon("save")}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

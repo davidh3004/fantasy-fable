@@ -1,0 +1,14 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets — never commit real env files (the .example templates are allowed)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Dependencies / build artifacts (also covered by fantasy-ldf/.gitignore)
+**/node_modules/
+**/.next/
+**/.vercel/
+*.tsbuildinfo

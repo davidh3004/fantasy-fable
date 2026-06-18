@@ -1,0 +1,536 @@
+{
+  "common": {
+    "appName": "Fantasy LDF",
+    "tagline": "Build your squad. Rule the league.",
+    "loading": "Loading..."
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Welcome back, boss",
+      "email": "Email",
+      "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "forgot": "Forgot your password?",
+      "submit": "Sign in",
+      "google": "Continue with Google",
+      "orEmail": "or with your email",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Create one for free"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Join and build your dream team",
+      "displayName": "Username",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "Minimum 8 characters",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "google": "Continue with Google",
+      "orEmail": "or with your email",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Sign in",
+      "checkEmail": "Account created! Check your email to confirm it."
+    },
+    "reset": {
+      "title": "Reset password",
+      "subtitle": "We'll send a link to your email",
+      "email": "Email",
+      "submit": "Send link",
+      "back": "Back to sign in",
+      "sent": "Link sent. Check your email."
+    },
+    "update": {
+      "title": "New password",
+      "subtitle": "Type your new password",
+      "password": "New password",
+      "confirmPassword": "Confirm password",
+      "submit": "Update password"
+    },
+    "errors": {
+      "missing_fields": "Fill in all the fields.",
+      "invalid_credentials": "Wrong email or password.",
+      "email_not_confirmed": "Confirm your email before signing in.",
+      "user_already_exists": "An account with this email already exists.",
+      "weak_password": "Password must be at least 8 characters.",
+      "passwords_mismatch": "Passwords don't match.",
+      "over_request_rate_limit": "Too many attempts. Wait a moment.",
+      "oauth": "Couldn't connect with Google. Try again.",
+      "confirm": "The link is invalid or expired.",
+      "unknown": "Something went wrong. Try again."
+    },
+    "signOut": "Sign out"
+  },
+  "onboarding": {
+    "title": "Create your team",
+    "step": "Step {current} of {total}",
+    "welcome": {
+      "title": "How does it work?",
+      "intro": "Five minutes and you're ready. Here's how the game works:",
+      "cards": {
+        "squad": {
+          "title": "Build your squad",
+          "body": "Pick {count} real players from the league with a {budget} budget. Max {max} per club."
+        },
+        "lineup": {
+          "title": "Set your eleven",
+          "body": "Every gameweek you pick 11 starters, your bench, and a captain who scores double."
+        },
+        "points": {
+          "title": "Score real points",
+          "body": "Goals, assists, clean sheets and more, based on what happens in the real matches."
+        },
+        "compete": {
+          "title": "Compete with everyone",
+          "body": "Make transfers between gameweeks, climb the overall ranking and create leagues with friends."
+        }
+      },
+      "start": "Get started"
+    },
+    "identityTitle": "Your identity",
+    "teamName": "Your team name",
+    "teamNamePlaceholder": "E.g. Eastern Lions",
+    "teamNameHint": "Between 3 and 30 characters",
+    "favoriteClub": "Your favorite club (optional)",
+    "noFavorite": "None",
+    "continue": "Continue",
+    "back": "Back",
+    "squadTitle": "Pick your squad",
+    "budgetRemaining": "Budget remaining",
+    "selectedCount": "{count} of {total}",
+    "filterAll": "All",
+    "filterPicked": "My squad",
+    "search": "Search player or club...",
+    "autoPick": "Auto pick",
+    "reset": "Reset",
+    "confirm": "Confirm squad",
+    "emptySlot": "Empty",
+    "remove": "Remove {name}",
+    "noResults": "No players match.",
+    "lineup": {
+      "title": "Pick your starting eleven",
+      "hint": "Tap a player, then tap who should take their place. On the bench, the order sets auto-substitution priority.",
+      "bench": "Bench",
+      "errors": {
+        "swap_gk": "The goalkeeper can only be swapped with the other goalkeeper.",
+        "swap_formation": "That swap breaks the minimum formation ({def} DEF, {mid} MID, {fwd} FWD)."
+      }
+    },
+    "captain": {
+      "title": "Captain and vice",
+      "hint": "Your captain scores double points. If they don't play, the vice-captain steps in.",
+      "modeCaptain": "Captain",
+      "modeVice": "Vice-captain",
+      "finish": "Create my team"
+    },
+    "errors": {
+      "team_name_invalid": "Team name must be between 3 and 30 characters.",
+      "squad_incomplete": "You must pick exactly {count} players.",
+      "duplicate_players": "Your squad has duplicate players.",
+      "position_counts": "Your squad doesn't meet the position quotas.",
+      "club_limit": "Maximum {max} players per club.",
+      "budget_exceeded": "You went over budget.",
+      "invalid_squad": "The selection is not valid. Check your squad.",
+      "lineup_invalid": "The lineup is not valid. Check your eleven and your bench.",
+      "captain_invalid": "Pick a distinct captain and vice from your starting eleven.",
+      "unknown": "Something went wrong. Try again."
+    }
+  },
+  "positions": {
+    "GK": "Goalkeeper",
+    "DEF": "Defender",
+    "MID": "Midfielder",
+    "FWD": "Forward"
+  },
+  "positionsShort": {
+    "GK": "GK",
+    "DEF": "DEF",
+    "MID": "MID",
+    "FWD": "FWD"
+  },
+  "home": {
+    "title": "Home",
+    "greeting": "Hi, {name}",
+    "stats": {
+      "gwPoints": "GW points",
+      "totalPoints": "Total points",
+      "rank": "Rank",
+      "bank": "Bank"
+    },
+    "deadline": {
+      "title": "Gameweek {number}",
+      "subtitle": "Transfer deadline",
+      "noUpcoming": "No gameweek scheduled right now.",
+      "closed": "Market closed",
+      "days": "days",
+      "hours": "hrs",
+      "minutes": "min",
+      "seconds": "sec"
+    },
+    "actions": {
+      "team": "My team",
+      "transfers": "Transfers"
+    },
+    "fixtures": {
+      "title": "Matches · Gameweek {number}",
+      "empty": "No matches scheduled."
+    }
+  },
+  "transfers": {
+    "locked": "There's no upcoming gameweek. The market is closed.",
+    "stats": {
+      "bank": "Bank",
+      "freeTransfers": "Free",
+      "pointsCost": "Pts cost"
+    },
+    "unlimited": "Unlimited",
+    "pending": "{count, plural, one {# change} other {# changes}}",
+    "reset": "Reset",
+    "reviewCta": "Review",
+    "transferOut": "Transfer",
+    "undo": "Undo change",
+    "saved": "Transfers confirmed!",
+    "market": {
+      "title": "Pick a {position}",
+      "search": "Search player or club...",
+      "noResults": "No players match.",
+      "out": "Out",
+      "available": "Available",
+      "filterClub": "Filter by club",
+      "allClubs": "All clubs",
+      "sort": "Sort",
+      "sortPriceDesc": "Price: high to low",
+      "sortPriceAsc": "Price: low to high",
+      "sortName": "Name (A-Z)",
+      "onlyAffordable": "Affordable",
+      "blocked": {
+        "budget": "No funds",
+        "club": "Club limit"
+      }
+    },
+    "review": {
+      "title": "Review transfers",
+      "out": "Out",
+      "in": "In",
+      "free": "Free transfers",
+      "hits": "With cost",
+      "hitsValue": "{count} (-{points} pts)",
+      "unlimited": "Unlimited",
+      "bankAfter": "Bank after",
+      "confirm": "Confirm {count, plural, one {# transfer} other {# transfers}}"
+    },
+    "errors": {
+      "deadline_passed": "The gameweek already closed. You can't make transfers.",
+      "invalid": "The transfers are not valid. Check your changes.",
+      "position_mismatch": "Each change must be between players of the same position.",
+      "club_limit": "You exceed the players-per-club limit.",
+      "budget": "You went over budget.",
+      "no_team": "You don't have a team yet.",
+      "unknown": "Something went wrong. Try again."
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you're looking for doesn't exist or was moved.",
+    "cta": "Go home"
+  },
+  "matches": {
+    "title": "Matches",
+    "prev": "Previous gameweek",
+    "next": "Next gameweek",
+    "back": "Back to matches",
+    "noGameweeks": "No gameweeks scheduled yet.",
+    "noFixtures": "No matches in this gameweek.",
+    "noStats": "No stats recorded.",
+    "notPlayed": "This match hasn't been played yet."
+  },
+  "manager": {
+    "title": "Rival's team",
+    "back": "Back",
+    "hidden": "This team becomes visible once the first gameweek starts.",
+    "noLineup": "This team had no lineup for that gameweek."
+  },
+  "leagues": {
+    "title": "Leagues",
+    "overall": "Overall League",
+    "overallSub": "Rank {rank} of {managers}",
+    "overallSubEmpty": "No ranking yet",
+    "private": "Private leagues",
+    "create": "Create league",
+    "join": "Join",
+    "createTitle": "Create a private league",
+    "createdHint": "League created! Share this code for friends to join:",
+    "done": "Done",
+    "nameLabel": "League name",
+    "namePlaceholder": "E.g. Office League",
+    "joinTitle": "Join a league",
+    "joinedToast": "You joined the league!",
+    "codeLabel": "Invite code",
+    "leagueSub": "Rank {rank} · {members} teams",
+    "noLeagues": "You're not in any private league yet. Create one or join with a code.",
+    "back": "Back to leagues",
+    "rank": "#",
+    "team": "Team",
+    "gw": "GW",
+    "total": "Total",
+    "empty": "No teams ranked yet.",
+    "inviteCode": "Invite code",
+    "copied": "Copied!",
+    "memberCount": "{count, plural, one {# team} other {# teams}}",
+    "leave": "Leave",
+    "confirmLeave": "Leave \"{name}\"?",
+    "leftToast": "You left the league.",
+    "topLimit": "Showing the top {count}.",
+    "errors": {
+      "no_team": "Create your team first.",
+      "name_invalid": "The name must be 3 to 40 characters.",
+      "code_invalid": "The code is not valid.",
+      "not_found": "No league exists with that code.",
+      "wrong_season": "That league is from another season.",
+      "already_member": "You're already a member of this league.",
+      "unknown": "Something went wrong. Try again."
+    }
+  },
+  "nav": {
+    "primary": "Primary navigation",
+    "home": "Home",
+    "team": "Team",
+    "transfers": "Transfers",
+    "leagues": "Leagues",
+    "matches": "Matches",
+    "more": "More"
+  },
+  "team": {
+    "gameweek": "Gameweek {number}",
+    "deadline": "Closes: {date}",
+    "noGameweek": "There's no upcoming gameweek. Your lineup is read-only.",
+    "prevGw": "Previous gameweek",
+    "nextGw": "Next gameweek",
+    "upcoming": "Upcoming",
+    "live": "Live",
+    "finished": "Final",
+    "liveSub": "Matches in play — live points",
+    "finishedSub": "Gameweek finished",
+    "bench": "Bench",
+    "switchHint": "Pick who to swap {name} with.",
+    "fixtureHome": "{opp} (H)",
+    "fixtureAway": "{opp} (A)",
+    "points": "{points} pts",
+    "specs": {
+      "position": "Position",
+      "club": "Club",
+      "price": "Price",
+      "nextFixture": "Next fixture"
+    },
+    "status": {
+      "available": "Available",
+      "injured": "Injured",
+      "suspended": "Suspended",
+      "unavailable": "Unavailable"
+    },
+    "actions": {
+      "switch": "Switch",
+      "captain": "Captain",
+      "vice": "Vice",
+      "cancel": "Cancel"
+    },
+    "save": "Save changes",
+    "discard": "Discard",
+    "saved": "Lineup saved!",
+    "errors": {
+      "swap_gk": "The goalkeeper can only be swapped with the other goalkeeper.",
+      "swap_formation": "That swap breaks the minimum formation ({def} DEF, {mid} MID, {fwd} FWD).",
+      "deadline_passed": "The gameweek already closed. You can't change your lineup.",
+      "lineup_invalid": "The lineup is not valid. Check your eleven and your bench.",
+      "captain_invalid": "Captain and vice must be different starters.",
+      "no_team": "You don't have a team yet.",
+      "unknown": "Something went wrong. Try again."
+    }
+  },
+  "comingSoon": {
+    "title": "Under construction",
+    "body": "This section is coming soon."
+  },
+  "more": {
+    "rules": "Game rules",
+    "language": "Language",
+    "soon": "Soon",
+    "admin": "Admin panel"
+  },
+  "admin": {
+    "title": "Administration",
+    "nav": {
+      "aria": "Admin sections",
+      "clubs": "Clubs",
+      "players": "Players",
+      "gameweeks": "Gameweeks",
+      "results": "Results",
+      "scoring": "Scoring",
+      "settings": "Settings"
+    },
+    "common": {
+      "save": "Save",
+      "saved": "Saved.",
+      "deleted": "Deleted.",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete \"{name}\"? This cannot be undone.",
+      "uploadImage": "Upload image",
+      "uploadHint": "PNG, JPG, WEBP or SVG. Max 2MB. Replaces the URL.",
+      "errors": {
+        "forbidden": "You don't have admin permissions.",
+        "validation": "Check the form fields.",
+        "in_use": "Can't delete: it has associated data.",
+        "duplicate_number": "A gameweek with that number already exists.",
+        "no_fixtures": "The gameweek has no fixtures.",
+        "same_clubs": "Home and away can't be the same club.",
+        "file_type": "Unsupported image format (PNG, JPG, WEBP, SVG).",
+        "file_size": "The image exceeds 2MB.",
+        "upload_failed": "Couldn't upload the image. Try again.",
+        "not_locked": "The gameweek hasn't closed yet. Wait for the deadline.",
+        "fixtures_pending": "Some fixtures are missing results. Enter them all first.",
+        "already_finished": "The gameweek was already finalized.",
+        "unknown": "Something went wrong. Try again."
+      }
+    },
+    "scoring": {
+      "intro": "Set the points for each event. Applies to results entered from now on.",
+      "event": "Event",
+      "position": "Position",
+      "points": "Points",
+      "allPositions": "All",
+      "events": {
+        "minutes_lt_60": "Playing 1-59 minutes",
+        "minutes_gte_60": "Playing 60+ minutes",
+        "goal": "Goal",
+        "assist": "Assist",
+        "clean_sheet": "Clean sheet (60+ min)",
+        "saves_per_3": "Every 3 saves",
+        "penalty_save": "Penalty save",
+        "penalty_miss": "Penalty miss",
+        "goals_conceded_per_2": "Every 2 goals conceded",
+        "yellow_card": "Yellow card",
+        "red_card": "Red card",
+        "own_goal": "Own goal"
+      }
+    },
+    "clubs": {
+      "count": "{count, plural, one {# club} other {# clubs}}",
+      "new": "New club",
+      "editTitle": "Edit club",
+      "players": "{count, plural, one {# player} other {# players}}",
+      "name": "Name",
+      "shortName": "Code (2-4)",
+      "primaryColor": "Primary color",
+      "secondaryColor": "Secondary color",
+      "badgeUrl": "Badge URL"
+    },
+    "players": {
+      "count": "{count, plural, one {# player} other {# players}}",
+      "new": "New player",
+      "editTitle": "Edit player",
+      "search": "Search player...",
+      "filterClub": "Filter by club",
+      "allClubs": "All clubs",
+      "filterPosition": "Filter by position",
+      "allPositions": "All positions",
+      "noResults": "No players match.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "club": "Club",
+      "position": "Position",
+      "price": "Price (millions)",
+      "status": "Status",
+      "photoUrl": "Photo URL"
+    },
+    "gameweeks": {
+      "count": "{count, plural, one {# gameweek} other {# gameweeks}}",
+      "new": "New gameweek",
+      "editTitle": "Edit gameweek {number}",
+      "gameweek": "Gameweek {number}",
+      "number": "Number",
+      "statusLabel": "Status",
+      "status": {
+        "upcoming": "Upcoming",
+        "locked": "In play",
+        "finished": "Finished"
+      },
+      "deadlineLabel": "Transfer deadline",
+      "astHint": "Dominican Republic time (AST).",
+      "recompute": "Auto-set deadline (first kickoff − offset)",
+      "finalize": "Finalize gameweek (compute points)",
+      "confirmFinalize": "Finalize gameweek {number}? Points, auto-subs and rankings will be computed. This cannot be undone.",
+      "addFixture": "Add fixture",
+      "editFixture": "Edit fixture",
+      "home": "Home",
+      "away": "Away",
+      "kickoff": "Kickoff",
+      "finished": "FT"
+    },
+    "results": {
+      "intro": "Pick a fixture to enter the result and player stats.",
+      "gameweek": "Gameweek {number}",
+      "entered": "Entered",
+      "pendingEntry": "Pending",
+      "noFixtures": "No fixtures."
+    },
+    "result": {
+      "back": "Back to results",
+      "homeScore": "Home goals",
+      "awayScore": "Away goals",
+      "autoHint": "Goals conceded and clean sheets are derived automatically from the score and minutes (60+). Points are computed on save.",
+      "player": "Player",
+      "cols": {
+        "minutes": "Min",
+        "goals": "Gls",
+        "assists": "Ast",
+        "saves": "Sav",
+        "penaltiesSaved": "PkS",
+        "penaltiesMissed": "PkM",
+        "yellowCards": "YC",
+        "redCards": "RC",
+        "ownGoals": "OG"
+      },
+      "bonusTitle": "Bonus points",
+      "bonusHint": "Pick the 3 best players of the match (3, 2 and 1 extra points).",
+      "bonusSlot": "Bonus {points} pts",
+      "bonusNone": "— None —",
+      "save": "Save result",
+      "saved": "Result saved and points computed.",
+      "errors": {
+        "forbidden": "You don't have admin permissions.",
+        "validation": "Check the score and stats.",
+        "unknown": "Something went wrong. Try again."
+      }
+    },
+    "settings": {
+      "groups": {
+        "squad": "Squad",
+        "lineup": "Lineup",
+        "transfers": "Transfers",
+        "schedule": "Schedule"
+      },
+      "fields": {
+        "budget": "Budget (tenths)",
+        "squadSize": "Squad size",
+        "gkCount": "Goalkeepers",
+        "defCount": "Defenders",
+        "midCount": "Midfielders",
+        "fwdCount": "Forwards",
+        "startingSize": "Starters",
+        "minDef": "Min defenders",
+        "minMid": "Min midfielders",
+        "minFwd": "Min forwards",
+        "maxPerClub": "Max per club",
+        "freeTransfersPerGw": "Free transfers per GW",
+        "maxBankedTransfers": "Max banked transfers",
+        "transferHitCost": "Extra transfer cost (pts)",
+        "deadlineOffsetMinutes": "Deadline offset (min)",
+        "wildcardsPerSeason": "Wildcards per season"
+      },
+      "budgetHint": "Budget is stored in tenths: 1000 = $100.0 million."
+    }
+  }
+}

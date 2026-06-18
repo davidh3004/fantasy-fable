@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-chakra), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-russo), ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Fantasy LDF design system (dark-first, "vibrant & block-based"):
+ * neon purple primary, rose CTA, deep navy background.
+ * A light theme is a v2 item — :root and .dark are intentionally identical.
+ */
+:root {
+  --background: #0f0f23;
+  --foreground: #e2e8f0;
+  --card: #181830;
+  --card-foreground: #e2e8f0;
+  --popover: #181830;
+  --popover-foreground: #e2e8f0;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #27273b;
+  --secondary-foreground: #e2e8f0;
+  --muted: #27273b;
+  --muted-foreground: #94a3b8;
+  --accent: #232345;
+  --accent-foreground: #e2e8f0;
+  --destructive: #ef4444;
+  --border: #2c2c4a;
+  --input: #2c2c4a;
+  --ring: #7c3aed;
+  --cta: #f43f5e;
+  --cta-foreground: #ffffff;
+  --chart-1: #7c3aed;
+  --chart-2: #f43f5e;
+  --chart-3: #22d3ee;
+  --chart-4: #facc15;
+  --chart-5: #34d399;
+  --radius: 0.75rem;
+  --sidebar: #131328;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #232345;
+  --sidebar-accent-foreground: #e2e8f0;
+  --sidebar-border: #2c2c4a;
+  --sidebar-ring: #7c3aed;
+}
+
+.dark {
+  --background: #0f0f23;
+  --foreground: #e2e8f0;
+  --card: #181830;
+  --card-foreground: #e2e8f0;
+  --popover: #181830;
+  --popover-foreground: #e2e8f0;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #27273b;
+  --secondary-foreground: #e2e8f0;
+  --muted: #27273b;
+  --muted-foreground: #94a3b8;
+  --accent: #232345;
+  --accent-foreground: #e2e8f0;
+  --destructive: #ef4444;
+  --border: #2c2c4a;
+  --input: #2c2c4a;
+  --ring: #7c3aed;
+  --cta: #f43f5e;
+  --cta-foreground: #ffffff;
+  --chart-1: #7c3aed;
+  --chart-2: #f43f5e;
+  --chart-3: #22d3ee;
+  --chart-4: #facc15;
+  --chart-5: #34d399;
+  --sidebar: #131328;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #232345;
+  --sidebar-accent-foreground: #e2e8f0;
+  --sidebar-border: #2c2c4a;
+  --sidebar-ring: #7c3aed;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

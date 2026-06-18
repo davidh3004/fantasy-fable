@@ -1,0 +1,536 @@
+{
+  "common": {
+    "appName": "Fantasy LDF",
+    "tagline": "Arma tu equipo. Domina la liga.",
+    "loading": "Cargando..."
+  },
+  "auth": {
+    "login": {
+      "title": "Inicia sesión",
+      "subtitle": "Bienvenido de vuelta, míster",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
+      "forgot": "¿Olvidaste tu contraseña?",
+      "submit": "Entrar",
+      "google": "Continuar con Google",
+      "orEmail": "o con tu correo",
+      "noAccount": "¿No tienes cuenta?",
+      "registerLink": "Crea una gratis"
+    },
+    "register": {
+      "title": "Crea tu cuenta",
+      "subtitle": "Únete y arma tu equipo soñado",
+      "displayName": "Nombre de usuario",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "passwordHint": "Mínimo 8 caracteres",
+      "confirmPassword": "Confirmar contraseña",
+      "submit": "Crear cuenta",
+      "google": "Continuar con Google",
+      "orEmail": "o con tu correo",
+      "hasAccount": "¿Ya tienes cuenta?",
+      "loginLink": "Inicia sesión",
+      "checkEmail": "¡Cuenta creada! Revisa tu correo para confirmarla."
+    },
+    "reset": {
+      "title": "Recuperar contraseña",
+      "subtitle": "Te enviaremos un enlace a tu correo",
+      "email": "Correo electrónico",
+      "submit": "Enviar enlace",
+      "back": "Volver a iniciar sesión",
+      "sent": "Enlace enviado. Revisa tu correo."
+    },
+    "update": {
+      "title": "Nueva contraseña",
+      "subtitle": "Escribe tu nueva contraseña",
+      "password": "Nueva contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "submit": "Actualizar contraseña"
+    },
+    "errors": {
+      "missing_fields": "Completa todos los campos.",
+      "invalid_credentials": "Correo o contraseña incorrectos.",
+      "email_not_confirmed": "Confirma tu correo antes de entrar.",
+      "user_already_exists": "Ya existe una cuenta con este correo.",
+      "weak_password": "La contraseña debe tener al menos 8 caracteres.",
+      "passwords_mismatch": "Las contraseñas no coinciden.",
+      "over_request_rate_limit": "Demasiados intentos. Espera un momento.",
+      "oauth": "No se pudo conectar con Google. Intenta de nuevo.",
+      "confirm": "El enlace no es válido o expiró.",
+      "unknown": "Algo salió mal. Intenta de nuevo."
+    },
+    "signOut": "Cerrar sesión"
+  },
+  "onboarding": {
+    "title": "Crea tu equipo",
+    "step": "Paso {current} de {total}",
+    "welcome": {
+      "title": "¿Cómo se juega?",
+      "intro": "Cinco minutos y estás listo. Así funciona el juego:",
+      "cards": {
+        "squad": {
+          "title": "Arma tu plantilla",
+          "body": "Elige {count} jugadores reales de la liga con {budget} de presupuesto. Máximo {max} por club."
+        },
+        "lineup": {
+          "title": "Alinea tu once",
+          "body": "Cada jornada eliges 11 titulares, tu banca y un capitán que duplica sus puntos."
+        },
+        "points": {
+          "title": "Suma puntos reales",
+          "body": "Goles, asistencias, porterías a cero y más, según lo que pase en los partidos reales."
+        },
+        "compete": {
+          "title": "Compite con todos",
+          "body": "Haz fichajes entre jornadas, sube en el ranking general y crea ligas con tus amigos."
+        }
+      },
+      "start": "Empezar"
+    },
+    "identityTitle": "Tu identidad",
+    "teamName": "Nombre de tu equipo",
+    "teamNamePlaceholder": "Ej: Leones del Este",
+    "teamNameHint": "Entre 3 y 30 caracteres",
+    "favoriteClub": "Tu club favorito (opcional)",
+    "noFavorite": "Ninguno",
+    "continue": "Continuar",
+    "back": "Atrás",
+    "squadTitle": "Elige tu plantilla",
+    "budgetRemaining": "Presupuesto disponible",
+    "selectedCount": "{count} de {total}",
+    "filterAll": "Todos",
+    "filterPicked": "Mi plantilla",
+    "search": "Buscar jugador o club...",
+    "autoPick": "Auto-elegir",
+    "reset": "Reiniciar",
+    "confirm": "Confirmar equipo",
+    "emptySlot": "Vacío",
+    "remove": "Quitar a {name}",
+    "noResults": "No hay jugadores que coincidan.",
+    "lineup": {
+      "title": "Elige tu once inicial",
+      "hint": "Toca un jugador y luego a quien quieras poner en su lugar. En la banca, el orden marca la prioridad de los cambios automáticos.",
+      "bench": "Banca",
+      "errors": {
+        "swap_gk": "El portero solo puede cambiarse por el otro portero.",
+        "swap_formation": "Ese cambio rompe la formación mínima ({def} DEF, {mid} MED, {fwd} DEL)."
+      }
+    },
+    "captain": {
+      "title": "Capitán y vice",
+      "hint": "El capitán duplica sus puntos. Si no juega, el vicecapitán toma su lugar.",
+      "modeCaptain": "Capitán",
+      "modeVice": "Vicecapitán",
+      "finish": "Crear mi equipo"
+    },
+    "errors": {
+      "team_name_invalid": "El nombre del equipo debe tener entre 3 y 30 caracteres.",
+      "squad_incomplete": "Debes elegir exactamente {count} jugadores.",
+      "duplicate_players": "Hay jugadores repetidos en tu plantilla.",
+      "position_counts": "La plantilla no cumple los cupos por posición.",
+      "club_limit": "Máximo {max} jugadores por club.",
+      "budget_exceeded": "Te pasaste del presupuesto.",
+      "invalid_squad": "La selección no es válida. Revisa tu plantilla.",
+      "lineup_invalid": "La alineación no es válida. Revisa tu once y tu banca.",
+      "captain_invalid": "Elige un capitán y un vice distintos dentro de tu once.",
+      "unknown": "Algo salió mal. Intenta de nuevo."
+    }
+  },
+  "positions": {
+    "GK": "Portero",
+    "DEF": "Defensa",
+    "MID": "Mediocampista",
+    "FWD": "Delantero"
+  },
+  "positionsShort": {
+    "GK": "POR",
+    "DEF": "DEF",
+    "MID": "MED",
+    "FWD": "DEL"
+  },
+  "home": {
+    "title": "Inicio",
+    "greeting": "Hola, {name}",
+    "stats": {
+      "gwPoints": "Pts jornada",
+      "totalPoints": "Pts totales",
+      "rank": "Ranking",
+      "bank": "Banco"
+    },
+    "deadline": {
+      "title": "Jornada {number}",
+      "subtitle": "Cierre del mercado",
+      "noUpcoming": "No hay ninguna jornada programada por ahora.",
+      "closed": "Mercado cerrado",
+      "days": "días",
+      "hours": "hrs",
+      "minutes": "min",
+      "seconds": "seg"
+    },
+    "actions": {
+      "team": "Mi equipo",
+      "transfers": "Fichajes"
+    },
+    "fixtures": {
+      "title": "Partidos · Jornada {number}",
+      "empty": "Sin partidos programados."
+    }
+  },
+  "transfers": {
+    "locked": "No hay una jornada próxima. El mercado está cerrado.",
+    "stats": {
+      "bank": "Banco",
+      "freeTransfers": "Gratis",
+      "pointsCost": "Costo pts"
+    },
+    "unlimited": "Ilimitados",
+    "pending": "{count, plural, one {# cambio} other {# cambios}}",
+    "reset": "Reiniciar",
+    "reviewCta": "Revisar",
+    "transferOut": "Transferir",
+    "undo": "Deshacer cambio",
+    "saved": "¡Fichajes confirmados!",
+    "market": {
+      "title": "Elige un {position}",
+      "search": "Buscar jugador o club...",
+      "noResults": "No hay jugadores que coincidan.",
+      "out": "Sale",
+      "available": "Disponible",
+      "filterClub": "Filtrar por club",
+      "allClubs": "Todos los clubes",
+      "sort": "Ordenar",
+      "sortPriceDesc": "Precio: mayor a menor",
+      "sortPriceAsc": "Precio: menor a mayor",
+      "sortName": "Nombre (A-Z)",
+      "onlyAffordable": "Asequibles",
+      "blocked": {
+        "budget": "Sin banco",
+        "club": "Límite club"
+      }
+    },
+    "review": {
+      "title": "Revisar fichajes",
+      "out": "Sale",
+      "in": "Entra",
+      "free": "Transfers gratis",
+      "hits": "Con costo",
+      "hitsValue": "{count} (-{points} pts)",
+      "unlimited": "Ilimitados",
+      "bankAfter": "Banco después",
+      "confirm": "Confirmar {count, plural, one {# fichaje} other {# fichajes}}"
+    },
+    "errors": {
+      "deadline_passed": "La jornada ya cerró. No puedes hacer fichajes.",
+      "invalid": "Los fichajes no son válidos. Revisa los cambios.",
+      "position_mismatch": "Cada cambio debe ser entre jugadores de la misma posición.",
+      "club_limit": "Superas el límite de jugadores por club.",
+      "budget": "Te pasaste del presupuesto.",
+      "no_team": "No tienes equipo todavía.",
+      "unknown": "Algo salió mal. Intenta de nuevo."
+    }
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "body": "La página que buscas no existe o fue movida.",
+    "cta": "Ir al inicio"
+  },
+  "matches": {
+    "title": "Partidos",
+    "prev": "Jornada anterior",
+    "next": "Jornada siguiente",
+    "back": "Volver a partidos",
+    "noGameweeks": "Aún no hay jornadas programadas.",
+    "noFixtures": "No hay partidos en esta jornada.",
+    "noStats": "Sin estadísticas registradas.",
+    "notPlayed": "Este partido aún no se ha jugado."
+  },
+  "manager": {
+    "title": "Equipo del rival",
+    "back": "Volver",
+    "hidden": "Este equipo estará visible cuando comience la primera jornada.",
+    "noLineup": "Este equipo no tenía alineación en esa jornada."
+  },
+  "leagues": {
+    "title": "Ligas",
+    "overall": "Liga General",
+    "overallSub": "Puesto {rank} de {managers}",
+    "overallSubEmpty": "Aún sin clasificación",
+    "private": "Ligas privadas",
+    "create": "Crear liga",
+    "join": "Unirse",
+    "createTitle": "Crear una liga privada",
+    "createdHint": "¡Liga creada! Comparte este código para que tus amigos se unan:",
+    "done": "Listo",
+    "nameLabel": "Nombre de la liga",
+    "namePlaceholder": "Ej: Liga de la oficina",
+    "joinTitle": "Unirse a una liga",
+    "joinedToast": "¡Te uniste a la liga!",
+    "codeLabel": "Código de invitación",
+    "leagueSub": "Puesto {rank} · {members} equipos",
+    "noLeagues": "Aún no estás en ninguna liga privada. Crea una o únete con un código.",
+    "back": "Volver a ligas",
+    "rank": "#",
+    "team": "Equipo",
+    "gw": "Jor",
+    "total": "Total",
+    "empty": "Aún no hay equipos clasificados.",
+    "inviteCode": "Código de invitación",
+    "copied": "¡Copiado!",
+    "memberCount": "{count, plural, one {# equipo} other {# equipos}}",
+    "leave": "Salir",
+    "confirmLeave": "¿Salir de \"{name}\"?",
+    "leftToast": "Saliste de la liga.",
+    "topLimit": "Mostrando los primeros {count}.",
+    "errors": {
+      "no_team": "Primero crea tu equipo.",
+      "name_invalid": "El nombre debe tener entre 3 y 40 caracteres.",
+      "code_invalid": "El código no es válido.",
+      "not_found": "No existe ninguna liga con ese código.",
+      "wrong_season": "Esa liga es de otra temporada.",
+      "already_member": "Ya eres miembro de esta liga.",
+      "unknown": "Algo salió mal. Intenta de nuevo."
+    }
+  },
+  "nav": {
+    "primary": "Navegación principal",
+    "home": "Inicio",
+    "team": "Equipo",
+    "transfers": "Fichajes",
+    "leagues": "Ligas",
+    "matches": "Partidos",
+    "more": "Más"
+  },
+  "team": {
+    "gameweek": "Jornada {number}",
+    "deadline": "Cierra: {date}",
+    "noGameweek": "No hay una jornada próxima. Tu alineación se muestra en modo lectura.",
+    "prevGw": "Jornada anterior",
+    "nextGw": "Jornada siguiente",
+    "upcoming": "Próxima",
+    "live": "En vivo",
+    "finished": "Final",
+    "liveSub": "Partidos en juego — puntos en vivo",
+    "finishedSub": "Jornada finalizada",
+    "bench": "Banca",
+    "switchHint": "Elige con quién cambiar a {name}.",
+    "fixtureHome": "{opp} (L)",
+    "fixtureAway": "{opp} (V)",
+    "points": "{points} pts",
+    "specs": {
+      "position": "Posición",
+      "club": "Club",
+      "price": "Precio",
+      "nextFixture": "Próximo partido"
+    },
+    "status": {
+      "available": "Disponible",
+      "injured": "Lesionado",
+      "suspended": "Sancionado",
+      "unavailable": "No disponible"
+    },
+    "actions": {
+      "switch": "Cambiar",
+      "captain": "Capitán",
+      "vice": "Vice",
+      "cancel": "Cancelar"
+    },
+    "save": "Guardar cambios",
+    "discard": "Descartar",
+    "saved": "¡Alineación guardada!",
+    "errors": {
+      "swap_gk": "El portero solo puede cambiarse por el otro portero.",
+      "swap_formation": "Ese cambio rompe la formación mínima ({def} DEF, {mid} MED, {fwd} DEL).",
+      "deadline_passed": "La jornada ya cerró. No puedes cambiar tu alineación.",
+      "lineup_invalid": "La alineación no es válida. Revisa tu once y tu banca.",
+      "captain_invalid": "Capitán y vice deben ser titulares distintos.",
+      "no_team": "Todavía no tienes equipo.",
+      "unknown": "Algo salió mal. Intenta de nuevo."
+    }
+  },
+  "comingSoon": {
+    "title": "En construcción",
+    "body": "Esta sección llega pronto."
+  },
+  "more": {
+    "rules": "Reglas del juego",
+    "language": "Idioma",
+    "soon": "Pronto",
+    "admin": "Panel de administración"
+  },
+  "admin": {
+    "title": "Administración",
+    "nav": {
+      "aria": "Secciones de administración",
+      "clubs": "Clubes",
+      "players": "Jugadores",
+      "gameweeks": "Jornadas",
+      "results": "Resultados",
+      "scoring": "Puntuación",
+      "settings": "Ajustes"
+    },
+    "common": {
+      "save": "Guardar",
+      "saved": "Guardado.",
+      "deleted": "Eliminado.",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar \"{name}\"? Esta acción no se puede deshacer.",
+      "uploadImage": "Subir imagen",
+      "uploadHint": "PNG, JPG, WEBP o SVG. Máx. 2MB. Reemplaza la URL.",
+      "errors": {
+        "forbidden": "No tienes permisos de administrador.",
+        "validation": "Revisa los campos del formulario.",
+        "in_use": "No se puede eliminar: tiene datos asociados.",
+        "duplicate_number": "Ya existe una jornada con ese número.",
+        "no_fixtures": "La jornada no tiene partidos.",
+        "same_clubs": "El local y el visitante no pueden ser el mismo club.",
+        "file_type": "Formato de imagen no soportado (PNG, JPG, WEBP, SVG).",
+        "file_size": "La imagen supera los 2MB.",
+        "upload_failed": "No se pudo subir la imagen. Intenta de nuevo.",
+        "not_locked": "La jornada aún no cierra. Espera a que pase la fecha límite.",
+        "fixtures_pending": "Faltan partidos por registrar. Completa todos los resultados primero.",
+        "already_finished": "La jornada ya fue finalizada.",
+        "unknown": "Algo salió mal. Intenta de nuevo."
+      }
+    },
+    "scoring": {
+      "intro": "Define los puntos de cada evento. Aplica a los resultados que se registren a partir de ahora.",
+      "event": "Evento",
+      "position": "Posición",
+      "points": "Puntos",
+      "allPositions": "Todas",
+      "events": {
+        "minutes_lt_60": "Jugar 1-59 minutos",
+        "minutes_gte_60": "Jugar 60+ minutos",
+        "goal": "Gol",
+        "assist": "Asistencia",
+        "clean_sheet": "Portería a cero (60+ min)",
+        "saves_per_3": "Cada 3 atajadas",
+        "penalty_save": "Penal atajado",
+        "penalty_miss": "Penal fallado",
+        "goals_conceded_per_2": "Cada 2 goles en contra",
+        "yellow_card": "Tarjeta amarilla",
+        "red_card": "Tarjeta roja",
+        "own_goal": "Autogol"
+      }
+    },
+    "clubs": {
+      "count": "{count, plural, one {# club} other {# clubes}}",
+      "new": "Nuevo club",
+      "editTitle": "Editar club",
+      "players": "{count, plural, one {# jugador} other {# jugadores}}",
+      "name": "Nombre",
+      "shortName": "Siglas (2-4)",
+      "primaryColor": "Color primario",
+      "secondaryColor": "Color secundario",
+      "badgeUrl": "URL del escudo"
+    },
+    "players": {
+      "count": "{count, plural, one {# jugador} other {# jugadores}}",
+      "new": "Nuevo jugador",
+      "editTitle": "Editar jugador",
+      "search": "Buscar jugador...",
+      "filterClub": "Filtrar por club",
+      "allClubs": "Todos los clubes",
+      "filterPosition": "Filtrar por posición",
+      "allPositions": "Todas las posiciones",
+      "noResults": "No hay jugadores que coincidan.",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "club": "Club",
+      "position": "Posición",
+      "price": "Precio (millones)",
+      "status": "Estado",
+      "photoUrl": "URL de la foto"
+    },
+    "gameweeks": {
+      "count": "{count, plural, one {# jornada} other {# jornadas}}",
+      "new": "Nueva jornada",
+      "editTitle": "Editar jornada {number}",
+      "gameweek": "Jornada {number}",
+      "number": "Número",
+      "statusLabel": "Estado",
+      "status": {
+        "upcoming": "Próxima",
+        "locked": "En juego",
+        "finished": "Finalizada"
+      },
+      "deadlineLabel": "Cierre del mercado",
+      "astHint": "Hora de República Dominicana (AST).",
+      "recompute": "Calcular cierre automático (primer partido − margen)",
+      "finalize": "Finalizar jornada (calcular puntos)",
+      "confirmFinalize": "¿Finalizar la jornada {number}? Se calcularán los puntos, los cambios automáticos y el ranking. Esta acción no se puede deshacer.",
+      "addFixture": "Agregar partido",
+      "editFixture": "Editar partido",
+      "home": "Local",
+      "away": "Visitante",
+      "kickoff": "Inicio del partido",
+      "finished": "Final"
+    },
+    "results": {
+      "intro": "Elige un partido para registrar el resultado y las estadísticas de los jugadores.",
+      "gameweek": "Jornada {number}",
+      "entered": "Registrado",
+      "pendingEntry": "Pendiente",
+      "noFixtures": "Sin partidos."
+    },
+    "result": {
+      "back": "Volver a resultados",
+      "homeScore": "Goles del local",
+      "awayScore": "Goles del visitante",
+      "autoHint": "Los goles en contra y las porterías a cero se calculan automáticamente con el marcador y los minutos (60+). Los puntos se calculan al guardar.",
+      "player": "Jugador",
+      "cols": {
+        "minutes": "Min",
+        "goals": "Gol",
+        "assists": "Asis",
+        "saves": "Atj",
+        "penaltiesSaved": "PenA",
+        "penaltiesMissed": "PenF",
+        "yellowCards": "TA",
+        "redCards": "TR",
+        "ownGoals": "AG"
+      },
+      "bonusTitle": "Puntos de bonificación",
+      "bonusHint": "Elige a los 3 mejores del partido (3, 2 y 1 puntos extra).",
+      "bonusSlot": "Bonus {points} pts",
+      "bonusNone": "— Ninguno —",
+      "save": "Guardar resultado",
+      "saved": "Resultado guardado y puntos calculados.",
+      "errors": {
+        "forbidden": "No tienes permisos de administrador.",
+        "validation": "Revisa el marcador y las estadísticas.",
+        "unknown": "Algo salió mal. Intenta de nuevo."
+      }
+    },
+    "settings": {
+      "groups": {
+        "squad": "Plantilla",
+        "lineup": "Alineación",
+        "transfers": "Fichajes",
+        "schedule": "Calendario"
+      },
+      "fields": {
+        "budget": "Presupuesto (décimas)",
+        "squadSize": "Tamaño de plantilla",
+        "gkCount": "Porteros",
+        "defCount": "Defensas",
+        "midCount": "Mediocampistas",
+        "fwdCount": "Delanteros",
+        "startingSize": "Titulares",
+        "minDef": "Mín. defensas",
+        "minMid": "Mín. mediocampistas",
+        "minFwd": "Mín. delanteros",
+        "maxPerClub": "Máx. por club",
+        "freeTransfersPerGw": "Transfers gratis por jornada",
+        "maxBankedTransfers": "Máx. transfers acumulados",
+        "transferHitCost": "Costo por transfer extra (pts)",
+        "deadlineOffsetMinutes": "Margen del cierre (min)",
+        "wildcardsPerSeason": "Wildcards por temporada"
+      },
+      "budgetHint": "El presupuesto se guarda en décimas: 1000 = $100.0 millones."
+    }
+  }
+}
