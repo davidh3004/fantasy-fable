@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Ban } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,12 @@ export function OnboardingWizard({
   const [viceId, setViceId] = useState<string>("");
   const [serverError, setServerError] = useState<string>();
   const [isPending, startTransition] = useTransition();
+
+  // Each step should start scrolled to the top, not wherever the previous
+  // step left the page.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [step]);
 
   const playerById = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
@@ -107,7 +113,7 @@ export function OnboardingWizard({
     : undefined;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-4">
         <p className="shrink-0 text-sm text-muted-foreground">
           {t("step", { current: step, total: TOTAL_STEPS })}
@@ -145,25 +151,6 @@ export function OnboardingWizard({
           <div className="mt-6 flex flex-col gap-2">
             <p className="text-sm font-medium">{t("favoriteClub")}</p>
             <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => setFavoriteClubId(null)}
-                aria-pressed={favoriteClubId === null}
-                className={cn(
-                  "flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition-colors",
-                  favoriteClubId === null
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <span
-                  className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
-                  aria-hidden
-                >
-                  <Ban className="size-6" />
-                </span>
-                <span className="text-sm font-medium">{t("noFavorite")}</span>
-              </button>
               {clubs.map((club) => (
                 <button
                   key={club.id}
@@ -189,6 +176,25 @@ export function OnboardingWizard({
                   </span>
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setFavoriteClubId(null)}
+                aria-pressed={favoriteClubId === null}
+                className={cn(
+                  "flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition-colors",
+                  favoriteClubId === null
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <span
+                  className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                  aria-hidden
+                >
+                  <Ban className="size-6" />
+                </span>
+                <span className="text-sm font-medium">{t("noFavorite")}</span>
+              </button>
             </div>
           </div>
 

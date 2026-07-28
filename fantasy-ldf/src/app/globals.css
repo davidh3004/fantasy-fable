@@ -138,4 +138,17 @@
   html {
     @apply font-sans;
   }
+
+  /* Mobile: hide the page scrollbar (touch scrolling still works). */
+  @media (max-width: 768px) {
+    html,
+    body {
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* legacy Edge */
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none; /* Chromium, Safari */
+    }
+  }
 }

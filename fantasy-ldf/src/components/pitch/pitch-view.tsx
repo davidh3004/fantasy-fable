@@ -18,11 +18,11 @@ export function PitchView({ groups, renderPlayer }: PitchViewProps) {
     <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-xl">
       <div className="relative aspect-[3/4] max-h-[min(62vh,34rem)] min-h-[24rem] w-full bg-gradient-to-b from-[#15532e] via-[#1b6b3a] to-[#155230]">
         <PitchMarkings />
-        <div className="relative z-[1] flex h-full flex-col justify-between px-1.5 py-4 sm:px-2">
+        <div className="relative z-[1] flex h-full flex-col justify-between px-3 py-5 sm:px-5">
           {PITCH_LINES.map((line) => (
             <div
               key={line}
-              className="flex flex-wrap items-start justify-evenly gap-0.5"
+              className="flex flex-nowrap items-start justify-evenly gap-1"
             >
               {groups[line].map((player) => renderPlayer(player))}
             </div>
