@@ -224,23 +224,15 @@ export function TransfersEditor({
       <PitchView
         groups={groups}
         renderPlayer={(player) => (
-          <span key={player.id} className="relative inline-flex">
-            {inIds.has(player.id) && (
-              <span
-                className="absolute -top-1.5 -left-1 z-[2] flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow"
-                aria-hidden
-              >
-                <ArrowLeftRight className="size-3" />
-              </span>
-            )}
-            <PlayerChip
-              player={player}
-              caption={fixtureLabel(player) ?? formatMoney(player.price)}
-              selected={selectedId === player.id}
-              disabled={locked}
-              onClick={() => handleTap(player.id)}
-            />
-          </span>
+          <PlayerChip
+            key={player.id}
+            player={player}
+            transferIn={inIds.has(player.id)}
+            caption={fixtureLabel(player) ?? formatMoney(player.price)}
+            selected={selectedId === player.id}
+            disabled={locked}
+            onClick={() => handleTap(player.id)}
+          />
         )}
       />
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MarketPlayer } from "@/lib/game/queries";
 
@@ -12,6 +13,8 @@ type PlayerChipProps = {
   captain?: boolean;
   vice?: boolean;
   benchOrder?: number;
+  /** Marks an incoming transfer (green arrow, top-left corner). */
+  transferIn?: boolean;
   disabled?: boolean;
   onClick?: () => void;
   ref?: React.Ref<HTMLButtonElement>;
@@ -73,6 +76,7 @@ export function PlayerChip({
   captain = false,
   vice = false,
   benchOrder,
+  transferIn = false,
   disabled = false,
   onClick,
   ref,
@@ -86,7 +90,9 @@ export function PlayerChip({
       aria-pressed={selected}
       aria-label={`${player.firstName} ${player.lastName}`}
       className={cn(
-        "relative flex w-[4.3rem] shrink-0 flex-col items-center transition-all sm:w-[4.8rem]",
+        // Fluid width so a full position line (up to 5) always fits the pitch
+        // on any screen; capped so lines with few players don't grow huge.
+        "relative flex w-full min-w-0 max-w-[4.8rem] flex-col items-center transition-all",
         dimmed && "opacity-35",
         disabled ? "cursor-default" : "cursor-pointer",
         !dimmed && !disabled && "hover:-translate-y-0.5"
@@ -141,6 +147,15 @@ export function PlayerChip({
           aria-hidden
         >
           {benchOrder}
+        </span>
+      )}
+
+      {transferIn && (
+        <span
+          className="absolute -top-1.5 -left-1 z-[1] flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow"
+          aria-hidden
+        >
+          <ArrowLeftRight className="size-3" />
         </span>
       )}
 
