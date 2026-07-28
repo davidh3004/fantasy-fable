@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { Ban } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,19 +144,25 @@ export function OnboardingWizard({
 
           <div className="mt-6 flex flex-col gap-2">
             <p className="text-sm font-medium">{t("favoriteClub")}</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => setFavoriteClubId(null)}
                 aria-pressed={favoriteClubId === null}
                 className={cn(
-                  "cursor-pointer rounded-xl border px-3 py-3 text-sm font-medium transition-colors",
+                  "flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition-colors",
                   favoriteClubId === null
                     ? "border-primary bg-primary/10"
                     : "border-border bg-card text-muted-foreground hover:text-foreground"
                 )}
               >
-                {t("noFavorite")}
+                <span
+                  className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                  aria-hidden
+                >
+                  <Ban className="size-6" />
+                </span>
+                <span className="text-sm font-medium">{t("noFavorite")}</span>
               </button>
               {clubs.map((club) => (
                 <button
@@ -164,31 +171,33 @@ export function OnboardingWizard({
                   onClick={() => setFavoriteClubId(club.id)}
                   aria-pressed={favoriteClubId === club.id}
                   className={cn(
-                    "flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-3 text-left transition-colors",
+                    "flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition-colors",
                     favoriteClubId === club.id
                       ? "border-primary bg-primary/10"
                       : "border-border bg-card hover:border-primary/50"
                   )}
                 >
                   <span
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                    className="flex size-14 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
                     style={{ backgroundColor: club.primaryColor ?? "#7c3aed" }}
                     aria-hidden
                   >
                     {club.shortName}
                   </span>
-                  <span className="min-w-0 truncate text-sm">{club.name}</span>
+                  <span className="line-clamp-2 text-sm font-medium leading-tight">
+                    {club.name}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="mt-8 flex items-center gap-2">
+          <div className="mt-8 grid grid-cols-2 gap-3">
             <Button
               type="button"
               variant="ghost"
               onClick={() => setStep(1)}
-              className="h-11 cursor-pointer"
+              className="h-11 w-full cursor-pointer"
             >
               {t("back")}
             </Button>
@@ -196,7 +205,7 @@ export function OnboardingWizard({
               type="button"
               onClick={() => setStep(3)}
               disabled={!nameValid}
-              className="h-11 cursor-pointer font-semibold px-10"
+              className="h-11 w-full cursor-pointer font-semibold"
             >
               {t("continue")}
             </Button>

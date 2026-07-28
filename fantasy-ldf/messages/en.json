@@ -87,7 +87,8 @@
           "body": "Make transfers between gameweeks, climb the overall ranking and create leagues with friends."
         }
       },
-      "start": "Get started"
+      "start": "Get started",
+      "next": "Next"
     },
     "identityTitle": "Your identity",
     "teamName": "Your team name",
@@ -357,7 +358,10 @@
     "rules": "Game rules",
     "language": "Language",
     "soon": "Soon",
-    "admin": "Admin panel"
+    "admin": "Admin panel",
+    "signOutTitle": "Sign out?",
+    "signOutBody": "You'll need to sign in again to manage your team.",
+    "cancel": "Cancel"
   },
   "admin": {
     "title": "Administration",
