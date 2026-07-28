@@ -192,12 +192,12 @@ export function OnboardingWizard({
             </div>
           </div>
 
-          <div className="mt-8 flex items-center justify-between">
+          <div className="mt-8 grid grid-cols-2 gap-3">
             <Button
               type="button"
               variant="ghost"
               onClick={() => setStep(1)}
-              className="h-11 cursor-pointer"
+              className="h-11 w-full cursor-pointer"
             >
               {t("back")}
             </Button>
@@ -205,7 +205,7 @@ export function OnboardingWizard({
               type="button"
               onClick={() => setStep(3)}
               disabled={!nameValid}
-              className="h-11 cursor-pointer font-semibold px-10"
+              className="h-11 w-full cursor-pointer font-semibold"
             >
               {t("continue")}
             </Button>

@@ -6,14 +6,12 @@ import {
   CalendarDays,
   ChevronRight,
   Languages,
-  LogOut,
   ShieldCheck,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getSessionUser } from "@/lib/supabase/user";
 import { isAdminUser } from "@/lib/admin";
-import { signOut } from "@/app/(auth)/actions";
-import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@/components/more/sign-out-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -24,9 +22,8 @@ export default async function MorePage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const [t, tAuth, tNav] = await Promise.all([
+  const [t, tNav] = await Promise.all([
     getTranslations("more"),
-    getTranslations("auth"),
     getTranslations("nav"),
   ]);
 
@@ -80,16 +77,9 @@ export default async function MorePage() {
         </div>
       </section>
 
-      <form action={signOut} className="mt-6">
-        <Button
-          type="submit"
-          variant="outline"
-          className="h-11 w-full cursor-pointer text-destructive hover:text-destructive sm:w-auto"
-        >
-          <LogOut className="size-4" aria-hidden />
-          {tAuth("signOut")}
-        </Button>
-      </form>
+      <div className="mt-6">
+        <SignOutButton />
+      </div>
     </main>
   );
 }

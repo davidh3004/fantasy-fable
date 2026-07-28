@@ -24,6 +24,7 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
   const t = useTranslations("onboarding.welcome");
   const trackRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const isLast = active === CARDS.length - 1;
 
   const cardParams = {
     count: settings.squadSize,
@@ -54,19 +55,14 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
         onScroll={handleScroll}
         className="mt-6 flex snap-x snap-mandatory overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {CARDS.map(({ key, Icon }, index) => (
+        {CARDS.map(({ key, Icon }) => (
           <div key={key} className="w-full shrink-0 basis-full snap-center px-0.5">
             <div className="flex min-h-72 flex-col items-center justify-center gap-5 rounded-2xl border border-border bg-card p-8 text-center">
               <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/15">
                 <Icon className="size-8 text-primary" aria-hidden />
               </div>
               <div className="max-w-sm">
-                <p className="text-xs tabular-nums text-muted-foreground">
-                  {index + 1} / {CARDS.length}
-                </p>
-                <p className="mt-1 font-heading text-xl">
-                  {t(`cards.${key}.title`)}
-                </p>
+                <p className="font-heading text-xl">{t(`cards.${key}.title`)}</p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   {t(`cards.${key}.body`, cardParams)}
                 </p>
@@ -95,10 +91,10 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
 
       <Button
         type="button"
-        onClick={onContinue}
+        onClick={() => (isLast ? onContinue() : goTo(active + 1))}
         className="mt-8 h-11 w-full cursor-pointer font-semibold"
       >
-        {t("start")}
+        {isLast ? t("start") : t("next")}
       </Button>
     </div>
   );

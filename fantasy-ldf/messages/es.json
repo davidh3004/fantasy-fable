@@ -87,7 +87,8 @@
           "body": "Haz fichajes entre jornadas, sube en el ranking general y crea ligas con tus amigos."
         }
       },
-      "start": "Empezar"
+      "start": "Empezar",
+      "next": "Siguiente"
     },
     "identityTitle": "Tu identidad",
     "teamName": "Nombre de tu equipo",
@@ -357,7 +358,10 @@
     "rules": "Reglas del juego",
     "language": "Idioma",
     "soon": "Pronto",
-    "admin": "Panel de administración"
+    "admin": "Panel de administración",
+    "signOutTitle": "¿Cerrar sesión?",
+    "signOutBody": "Tendrás que iniciar sesión de nuevo para gestionar tu equipo.",
+    "cancel": "Cancelar"
   },
   "admin": {
     "title": "Administración",
