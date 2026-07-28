@@ -82,6 +82,7 @@ export default async function MorePage() {
 
       <form action={signOut} className="mt-6">
         <Button
+          type="submit"
           variant="outline"
           className="h-11 w-full cursor-pointer text-destructive hover:text-destructive sm:w-auto"
         >
