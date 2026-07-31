@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarOff, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, CalendarOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getSessionUser } from "@/lib/supabase/user";
 import { ClubCrest } from "@/components/shared/club-badge";
@@ -91,17 +91,29 @@ export default async function MatchesPage({
   const { gw } = await searchParams;
   const { season } = await getActiveSeasonContext();
 
-  const [gameweeks, t, tTeam, locale] = await Promise.all([
+  const [gameweeks, t, tTeam, tCommon, locale] = await Promise.all([
     getSeasonGameweeks(season.id),
     getTranslations("matches"),
     getTranslations("team"),
+    getTranslations("common"),
     getLocale(),
   ]);
+
+  const backLink = (
+    <Link
+      href="/more"
+      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-primary"
+    >
+      <ArrowLeft className="size-4" aria-hidden />
+      {tCommon("back")}
+    </Link>
+  );
 
   if (gameweeks.length === 0) {
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        <h1 className="font-heading text-2xl">{t("title")}</h1>
+        {backLink}
+        <h1 className="mt-3 font-heading text-2xl">{t("title")}</h1>
         <div className="mt-5 flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card/50 px-6 py-16 text-center">
           <CalendarOff className="size-7 text-muted-foreground" aria-hidden />
           <p className="text-sm text-muted-foreground">{t("noGameweeks")}</p>
@@ -132,7 +144,8 @@ export default async function MatchesPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      <h1 className="mb-4 font-heading text-2xl">{t("title")}</h1>
+      {backLink}
+      <h1 className="mt-3 mb-4 font-heading text-2xl">{t("title")}</h1>
 
       {/* Gameweek pager */}
       <div className="flex items-center gap-2">

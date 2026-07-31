@@ -12,6 +12,7 @@ import { createFantasyTeam } from "@/app/onboarding/actions";
 import { buildInitialLineup, type SquadSettings } from "@/lib/game/squad";
 import type { LineupState } from "@/lib/game/lineup";
 import type { MarketPlayer } from "@/lib/game/queries";
+import { ClubCrest } from "@/components/shared/club-badge";
 import { SquadPicker } from "./squad-picker";
 import { WelcomeStep } from "./welcome-step";
 import { LineupStep } from "./lineup-step";
@@ -22,6 +23,7 @@ type ClubOption = {
   name: string;
   shortName: string;
   primaryColor: string | null;
+  badgeUrl: string | null;
 };
 
 type OnboardingWizardProps = {
@@ -164,13 +166,13 @@ export function OnboardingWizard({
                       : "border-border bg-card hover:border-primary/50"
                   )}
                 >
-                  <span
-                    className="flex size-14 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                    style={{ backgroundColor: club.primaryColor ?? "#7c3aed" }}
-                    aria-hidden
-                  >
-                    {club.shortName}
-                  </span>
+                  <ClubCrest
+                    shortName={club.shortName}
+                    name={club.name}
+                    color={club.primaryColor}
+                    badgeUrl={club.badgeUrl}
+                    className="size-14 text-sm"
+                  />
                   <span className="line-clamp-2 text-sm font-medium leading-tight">
                     {club.name}
                   </span>

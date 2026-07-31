@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import {
@@ -115,6 +115,71 @@ export async function getMarketPlayers(
     .innerJoin(clubs, eq(players.clubId, clubs.id))
     .where(eq(clubs.competitionId, competitionId))
     .orderBy(desc(players.price));
+}
+
+export type AdminPlayerFilters = {
+  competitionId: string;
+  clubId?: string;
+  position?: "GK" | "DEF" | "MID" | "FWD";
+  search?: string;
+  limit: number;
+  offset: number;
+};
+
+/**
+ * One page of players for the admin list, filtered server-side so we never
+ * ship the whole roster to the client. Returns the page rows + the total
+ * count for the current filters (for pagination).
+ */
+export async function getAdminPlayers(
+  opts: AdminPlayerFilters
+): Promise<{ rows: MarketPlayer[]; total: number }> {
+  const conds = [eq(clubs.competitionId, opts.competitionId)];
+  if (opts.clubId) conds.push(eq(players.clubId, opts.clubId));
+  if (opts.position) conds.push(eq(players.position, opts.position));
+  const search = opts.search?.trim();
+  if (search) {
+    const like = `%${search}%`;
+    conds.push(
+      or(
+        ilike(players.firstName, like),
+        ilike(players.lastName, like),
+        ilike(clubs.name, like)
+      )!
+    );
+  }
+  const where = and(...conds);
+
+  const [rows, totalRows] = await Promise.all([
+    db
+      .select({
+        id: players.id,
+        firstName: players.firstName,
+        lastName: players.lastName,
+        position: players.position,
+        price: players.price,
+        status: players.status,
+        clubId: players.clubId,
+        clubShortName: clubs.shortName,
+        clubName: clubs.name,
+        clubColor: clubs.primaryColor,
+        clubBadgeUrl: clubs.badgeUrl,
+        photoUrl: players.photoUrl,
+      })
+      .from(players)
+      .innerJoin(clubs, eq(players.clubId, clubs.id))
+      .where(where)
+      .orderBy(asc(players.lastName), asc(players.firstName))
+      .limit(opts.limit)
+      .offset(opts.offset),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(players)
+      .innerJoin(clubs, eq(players.clubId, clubs.id))
+      .where(where),
+  ]);
+
+  return { rows, total: totalRows[0]?.total ?? 0 };
 }
 
 export async function getUserFantasyTeam(userId: string, seasonId: string) {

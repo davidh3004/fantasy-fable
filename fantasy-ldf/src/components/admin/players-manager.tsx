@@ -1,7 +1,16 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -14,10 +23,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthAlert } from "@/components/auth/auth-alert";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
 import { deletePlayer, savePlayer } from "@/app/(app)/admin/actions";
-import { POSITION_ORDER, type Position } from "@/lib/game/squad";
+import { POSITION_ORDER } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
 
 const STATUSES = ["available", "injured", "suspended", "unavailable"] as const;
@@ -27,34 +37,63 @@ const selectClass =
 
 type ClubOption = { id: string; name: string };
 
-function normalize(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
-}
+type Filters = { q: string; club: string; pos: string };
 
 export function PlayersManager({
   players,
+  total,
+  page,
+  pageSize,
   clubs,
+  filters,
 }: {
   players: MarketPlayer[];
+  total: number;
+  page: number;
+  pageSize: number;
   clubs: ClubOption[];
+  filters: Filters;
 }) {
   const t = useTranslations("admin.players");
   const tCommon = useTranslations("admin.common");
+  const tGlobal = useTranslations("common");
   const tPos = useTranslations("positionsShort");
   const tStatus = useTranslations("team.status");
 
-  const [search, setSearch] = useState("");
-  const [clubFilter, setClubFilter] = useState("all");
-  const [positionFilter, setPositionFilter] = useState<"all" | Position>(
-    "all"
-  );
+  const router = useRouter();
+  const pathname = usePathname();
+  const [navPending, startNav] = useTransition();
+
+  const [searchInput, setSearchInput] = useState(filters.q);
   const [editing, setEditing] = useState<MarketPlayer | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string>();
   const [isPending, startTransition] = useTransition();
+
+  /** Push the current filters/page into the URL — the server refetches. */
+  function go(next: Partial<Filters & { page: number }>) {
+    const q = next.q ?? filters.q;
+    const club = next.club ?? filters.club;
+    const pos = next.pos ?? filters.pos;
+    const page = next.page ?? 1; // any filter change returns to page 1
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    if (club !== "all") params.set("club", club);
+    if (pos !== "all") params.set("pos", pos);
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    startNav(() => router.replace(qs ? `${pathname}?${qs}` : pathname));
+  }
+
+  // Debounce typing into a single navigation.
+  useEffect(() => {
+    if (searchInput === filters.q) return;
+    const id = setTimeout(() => go({ q: searchInput }), 350);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   function handleSubmit(formData: FormData) {
     startTransition(async () => {
@@ -75,24 +114,9 @@ export function PlayersManager({
     setDialogOpen(true);
   }
 
-  const visible = useMemo(() => {
-    const query = normalize(search.trim());
-    return players.filter((p) => {
-      if (clubFilter !== "all" && p.clubId !== clubFilter) return false;
-      if (positionFilter !== "all" && p.position !== positionFilter)
-        return false;
-      if (!query) return true;
-      return normalize(`${p.firstName} ${p.lastName} ${p.clubName}`).includes(
-        query
-      );
-    });
-  }, [players, search, clubFilter, positionFilter]);
-
-  function handleDelete(player: MarketPlayer) {
-    const name = `${player.firstName} ${player.lastName}`;
-    if (!window.confirm(tCommon("confirmDelete", { name }))) return;
+  function handleDelete(playerId: string) {
     startTransition(async () => {
-      const result = await deletePlayer(player.id);
+      const result = await deletePlayer(playerId);
       if (result.error) toast.error(tCommon(`errors.${result.error}`));
       else toast.success(tCommon("deleted"));
     });
@@ -107,15 +131,15 @@ export function PlayersManager({
             aria-hidden
           />
           <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t("search")}
             className="h-10 pl-9"
           />
         </div>
         <select
-          value={clubFilter}
-          onChange={(e) => setClubFilter(e.target.value)}
+          value={filters.club}
+          onChange={(e) => go({ club: e.target.value })}
           className={cn(selectClass, "w-auto")}
           aria-label={t("filterClub")}
         >
@@ -127,10 +151,8 @@ export function PlayersManager({
           ))}
         </select>
         <select
-          value={positionFilter}
-          onChange={(e) =>
-            setPositionFilter(e.target.value as "all" | Position)
-          }
+          value={filters.pos}
+          onChange={(e) => go({ pos: e.target.value })}
           className={cn(selectClass, "w-auto")}
           aria-label={t("filterPosition")}
         >
@@ -147,12 +169,13 @@ export function PlayersManager({
         </Button>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        {t("count", { count: visible.length })}
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        {t("count", { count: total })}
+        {navPending && <Loader2 className="size-3.5 animate-spin" aria-hidden />}
       </p>
 
-      <ul className="flex flex-col gap-1.5">
-        {visible.map((player) => (
+      <ul className={cn("flex flex-col gap-1.5", navPending && "opacity-60")}>
+        {players.map((player) => (
           <li
             key={player.id}
             className="flex items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-2"
@@ -217,23 +240,61 @@ export function PlayersManager({
             >
               <Pencil className="size-4" aria-hidden />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDelete(player)}
-              aria-label={tCommon("delete")}
-              className="cursor-pointer text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="size-4" aria-hidden />
-            </Button>
+            <ConfirmDialog
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={tCommon("delete")}
+                  className="cursor-pointer text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </Button>
+              }
+              title={tCommon("confirmDelete", {
+                name: `${player.firstName} ${player.lastName}`,
+              })}
+              confirmLabel={tCommon("delete")}
+              cancelLabel={tGlobal("cancel")}
+              onConfirm={() => handleDelete(player.id)}
+            />
           </li>
         ))}
-        {visible.length === 0 && (
+        {players.length === 0 && (
           <li className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
             {t("noResults")}
           </li>
         )}
       </ul>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={page <= 1 || navPending}
+            onClick={() => go({ page: page - 1 })}
+            aria-label={t("prevPage")}
+            className="cursor-pointer"
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+          </Button>
+          <span className="text-sm tabular-nums text-muted-foreground">
+            {t("pageOf", { page, total: totalPages })}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={page >= totalPages || navPending}
+            onClick={() => go({ page: page + 1 })}
+            aria-label={t("nextPage")}
+            className="cursor-pointer"
+          >
+            <ChevronRight className="size-4" aria-hidden />
+          </Button>
+        </div>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">

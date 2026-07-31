@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthAlert } from "@/components/auth/auth-alert";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { toAstInputValue } from "@/lib/game/format";
 import {
@@ -76,6 +77,7 @@ export function GameweeksManager({
 }) {
   const t = useTranslations("admin.gameweeks");
   const tCommon = useTranslations("admin.common");
+  const tGlobal = useTranslations("common");
 
   const [gwDialog, setGwDialog] = useState(false);
   const [editingGw, setEditingGw] = useState<AdminGameweek | null>(null);
@@ -178,31 +180,45 @@ export function GameweeksManager({
               </span>
               <span className="ml-auto flex gap-1">
                 {gw.status !== "finished" && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => {
-                      if (window.confirm(t("confirmFinalize", { number: gw.number }))) {
-                        runAction(() => finalizeGameweek(gw.id));
-                      }
-                    }}
-                    aria-label={t("finalize")}
-                    title={t("finalize")}
-                    className="cursor-pointer text-emerald-300 hover:text-emerald-200"
-                  >
-                    <FlagTriangleRight className="size-4" aria-hidden />
-                  </Button>
+                  <ConfirmDialog
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t("finalize")}
+                        title={t("finalize")}
+                        className="cursor-pointer text-emerald-300 hover:text-emerald-200"
+                      >
+                        <FlagTriangleRight className="size-4" aria-hidden />
+                      </Button>
+                    }
+                    title={t("finalizeConfirmTitle", { number: gw.number })}
+                    description={t("finalizeConfirmBody")}
+                    confirmLabel={t("finalizeShort")}
+                    cancelLabel={tGlobal("cancel")}
+                    destructive={false}
+                    onConfirm={() => runAction(() => finalizeGameweek(gw.id))}
+                  />
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => runAction(() => recomputeDeadline(gw.id))}
-                  aria-label={t("recompute")}
-                  title={t("recompute")}
-                  className="cursor-pointer"
-                >
-                  <Wand2 className="size-4" aria-hidden />
-                </Button>
+                <ConfirmDialog
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t("recompute")}
+                      title={t("recompute")}
+                      className="cursor-pointer"
+                    >
+                      <Wand2 className="size-4" aria-hidden />
+                    </Button>
+                  }
+                  title={t("recomputeConfirmTitle")}
+                  description={t("recomputeConfirmBody")}
+                  confirmLabel={t("recomputeShort")}
+                  cancelLabel={tGlobal("cancel")}
+                  destructive={false}
+                  onConfirm={() => runAction(() => recomputeDeadline(gw.id))}
+                />
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -216,25 +232,24 @@ export function GameweeksManager({
                 >
                   <Pencil className="size-4" aria-hidden />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        tCommon("confirmDelete", {
-                          name: t("gameweek", { number: gw.number }),
-                        })
-                      )
-                    ) {
-                      runAction(() => deleteGameweek(gw.id));
-                    }
-                  }}
-                  aria-label={tCommon("delete")}
-                  className="cursor-pointer text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="size-4" aria-hidden />
-                </Button>
+                <ConfirmDialog
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={tCommon("delete")}
+                      className="cursor-pointer text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </Button>
+                  }
+                  title={tCommon("confirmDelete", {
+                    name: t("gameweek", { number: gw.number }),
+                  })}
+                  confirmLabel={tCommon("delete")}
+                  cancelLabel={tGlobal("cancel")}
+                  onConfirm={() => runAction(() => deleteGameweek(gw.id))}
+                />
               </span>
             </div>
 
@@ -274,25 +289,24 @@ export function GameweeksManager({
                     >
                       <Pencil className="size-3.5" aria-hidden />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            tCommon("confirmDelete", {
-                              name: `${fixture.homeShort} - ${fixture.awayShort}`,
-                            })
-                          )
-                        ) {
-                          runAction(() => deleteFixture(fixture.id));
-                        }
-                      }}
-                      aria-label={tCommon("delete")}
-                      className="cursor-pointer text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="size-3.5" aria-hidden />
-                    </Button>
+                    <ConfirmDialog
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={tCommon("delete")}
+                          className="cursor-pointer text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="size-3.5" aria-hidden />
+                        </Button>
+                      }
+                      title={tCommon("confirmDelete", {
+                        name: `${fixture.homeShort} - ${fixture.awayShort}`,
+                      })}
+                      confirmLabel={tCommon("delete")}
+                      cancelLabel={tGlobal("cancel")}
+                      onConfirm={() => runAction(() => deleteFixture(fixture.id))}
+                    />
                   </span>
                 </li>
               ))}
