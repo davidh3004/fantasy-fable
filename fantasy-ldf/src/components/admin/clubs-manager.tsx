@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthAlert } from "@/components/auth/auth-alert";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { deleteClub, saveClub } from "@/app/(app)/admin/actions";
 
 export type AdminClub = {
@@ -54,9 +55,48 @@ function Field({
   );
 }
 
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+
+/** Color input with a live swatch + hex field kept in sync. */
+function ColorField({
+  name,
+  label,
+  defaultValue,
+}: {
+  name: string;
+  label: string;
+  defaultValue?: string;
+}) {
+  const [value, setValue] = useState(defaultValue ?? "");
+  const swatch = HEX_RE.test(value) ? value : "#7c3aed";
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={`club-${name}`}>{label}</Label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          aria-label={label}
+          value={swatch}
+          onChange={(e) => setValue(e.target.value.toUpperCase())}
+          className="size-10 shrink-0 cursor-pointer rounded-lg border border-border bg-card p-1"
+        />
+        <Input
+          id={`club-${name}`}
+          name={name}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="#F58220"
+          className="h-10 flex-1 uppercase tabular-nums"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function ClubsManager({ clubs }: { clubs: AdminClub[] }) {
   const t = useTranslations("admin.clubs");
   const tCommon = useTranslations("admin.common");
+  const tGlobal = useTranslations("common");
   const [editing, setEditing] = useState<AdminClub | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string>();
@@ -89,10 +129,9 @@ export function ClubsManager({ clubs }: { clubs: AdminClub[] }) {
     setDialogOpen(true);
   }
 
-  function handleDelete(club: AdminClub) {
-    if (!window.confirm(tCommon("confirmDelete", { name: club.name }))) return;
+  function handleDelete(clubId: string) {
     startTransition(async () => {
-      const result = await deleteClub(club.id);
+      const result = await deleteClub(clubId);
       if (result.error) toast.error(tCommon(`errors.${result.error}`));
       else toast.success(tCommon("deleted"));
     });
@@ -150,15 +189,22 @@ export function ClubsManager({ clubs }: { clubs: AdminClub[] }) {
             >
               <Pencil className="size-4" aria-hidden />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDelete(club)}
-              aria-label={tCommon("delete")}
-              className="cursor-pointer text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="size-4" aria-hidden />
-            </Button>
+            <ConfirmDialog
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={tCommon("delete")}
+                  className="cursor-pointer text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </Button>
+              }
+              title={tCommon("confirmDelete", { name: club.name })}
+              confirmLabel={tCommon("delete")}
+              cancelLabel={tGlobal("cancel")}
+              onConfirm={() => handleDelete(club.id)}
+            />
           </li>
         ))}
       </ul>
@@ -182,19 +228,17 @@ export function ClubsManager({ clubs }: { clubs: AdminClub[] }) {
                 required
                 placeholder="CIB"
               />
-              <Field
+              <ColorField
                 name="primaryColor"
                 label={t("primaryColor")}
                 defaultValue={editing?.primaryColor ?? ""}
-                placeholder="#F58220"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field
+              <ColorField
                 name="secondaryColor"
                 label={t("secondaryColor")}
                 defaultValue={editing?.secondaryColor ?? ""}
-                placeholder="#000000"
               />
               <Field
                 name="badgeUrl"

@@ -2,7 +2,9 @@
   "common": {
     "appName": "Fantasy LDF",
     "tagline": "Build your squad. Rule the league.",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "back": "Back"
   },
   "auth": {
     "login": {
@@ -282,6 +284,7 @@
     "memberCount": "{count, plural, one {# team} other {# teams}}",
     "leave": "Leave",
     "confirmLeave": "Leave \"{name}\"?",
+    "leaveBody": "You'll drop out of this league's standings. You can rejoin later with the invite code.",
     "leftToast": "You left the league.",
     "topLimit": "Showing the top {count}.",
     "errors": {
@@ -441,6 +444,9 @@
       "filterPosition": "Filter by position",
       "allPositions": "All positions",
       "noResults": "No players match.",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "pageOf": "{page} / {total}",
       "firstName": "First name",
       "lastName": "Last name",
       "club": "Club",
@@ -466,6 +472,12 @@
       "recompute": "Auto-set deadline (first kickoff − offset)",
       "finalize": "Finalize gameweek (compute points)",
       "confirmFinalize": "Finalize gameweek {number}? Points, auto-subs and rankings will be computed. This cannot be undone.",
+      "finalizeConfirmTitle": "Finalize gameweek {number}?",
+      "finalizeConfirmBody": "Points, auto-subs and rankings will be computed. This can't be undone.",
+      "finalizeShort": "Finalize",
+      "recomputeConfirmTitle": "Auto-set the deadline?",
+      "recomputeConfirmBody": "The deadline moves to the configured offset before the first kickoff.",
+      "recomputeShort": "Set deadline",
       "addFixture": "Add fixture",
       "editFixture": "Edit fixture",
       "home": "Home",

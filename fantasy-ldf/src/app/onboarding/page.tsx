@@ -53,6 +53,7 @@ export default async function OnboardingPage() {
           name: c.name,
           shortName: c.shortName,
           primaryColor: c.primaryColor,
+          badgeUrl: c.badgeUrl,
         }))}
         players={playerList}
         settings={toSquadSettings(settings)}

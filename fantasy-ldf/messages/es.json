@@ -2,7 +2,9 @@
   "common": {
     "appName": "Fantasy LDF",
     "tagline": "Arma tu equipo. Domina la liga.",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "cancel": "Cancelar",
+    "back": "Volver"
   },
   "auth": {
     "login": {
@@ -282,6 +284,7 @@
     "memberCount": "{count, plural, one {# equipo} other {# equipos}}",
     "leave": "Salir",
     "confirmLeave": "¿Salir de \"{name}\"?",
+    "leaveBody": "Saldrás de la clasificación de esta liga. Puedes volver a entrar con el código de invitación.",
     "leftToast": "Saliste de la liga.",
     "topLimit": "Mostrando los primeros {count}.",
     "errors": {
@@ -441,6 +444,9 @@
       "filterPosition": "Filtrar por posición",
       "allPositions": "Todas las posiciones",
       "noResults": "No hay jugadores que coincidan.",
+      "prevPage": "Página anterior",
+      "nextPage": "Página siguiente",
+      "pageOf": "{page} / {total}",
       "firstName": "Nombre",
       "lastName": "Apellido",
       "club": "Club",
@@ -466,6 +472,12 @@
       "recompute": "Calcular cierre automático (primer partido − margen)",
       "finalize": "Finalizar jornada (calcular puntos)",
       "confirmFinalize": "¿Finalizar la jornada {number}? Se calcularán los puntos, los cambios automáticos y el ranking. Esta acción no se puede deshacer.",
+      "finalizeConfirmTitle": "¿Finalizar la jornada {number}?",
+      "finalizeConfirmBody": "Se calcularán los puntos, los cambios automáticos y el ranking. No se puede deshacer.",
+      "finalizeShort": "Finalizar",
+      "recomputeConfirmTitle": "¿Fijar el cierre automático?",
+      "recomputeConfirmBody": "El cierre se moverá al margen configurado antes del primer partido.",
+      "recomputeShort": "Fijar cierre",
       "addFixture": "Agregar partido",
       "editFixture": "Editar partido",
       "home": "Local",
