@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -114,7 +115,9 @@ export const players = pgTable("players", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-}).enableRLS();
+  },
+  (t) => [index("players_club_idx").on(t.clubId)]
+).enableRLS();
 
 export const gameweeks = pgTable(
   "gameweeks",
@@ -146,7 +149,9 @@ export const fixtures = pgTable("fixtures", {
   homeScore: smallint("home_score"),
   awayScore: smallint("away_score"),
   status: fixtureStatus("status").notNull().default("scheduled"),
-}).enableRLS();
+  },
+  (t) => [index("fixtures_gameweek_idx").on(t.gameweekId)]
+).enableRLS();
 
 export const playerMatchStats = pgTable(
   "player_match_stats",
@@ -249,7 +254,11 @@ export const fantasyTeams = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("fantasy_teams_user_season_idx").on(t.userId, t.seasonId)]
+  (t) => [
+    uniqueIndex("fantasy_teams_user_season_idx").on(t.userId, t.seasonId),
+    // Standings/ranking scan the season's teams ordered by points.
+    index("fantasy_teams_season_points_idx").on(t.seasonId, t.totalPoints),
+  ]
 ).enableRLS();
 
 // Current squad (15 players). History lives in lineup_picks per gameweek.
@@ -287,6 +296,8 @@ export const gameweekLineups = pgTable(
   },
   (t) => [
     uniqueIndex("gameweek_lineups_team_gw_idx").on(t.fantasyTeamId, t.gameweekId),
+    // Finalize + live standings look up every lineup of one gameweek.
+    index("gameweek_lineups_gameweek_idx").on(t.gameweekId),
   ]
 ).enableRLS();
 
@@ -390,5 +401,7 @@ export const miniLeagueMembers = pgTable(
       t.leagueId,
       t.fantasyTeamId
     ),
+    // "My leagues" + leave-league look up membership by team.
+    index("mini_league_members_team_idx").on(t.fantasyTeamId),
   ]
 ).enableRLS();
