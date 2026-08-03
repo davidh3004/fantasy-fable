@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # App dependencies (package.json lives in fantasy-ldf/).
+  - package-ecosystem: npm
+    directory: /fantasy-ldf
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Collapse routine dev-tooling bumps into one PR to cut noise.
+      dev-dependencies:
+        dependency-type: development
+      # Group production minor/patch updates together.
+      production-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+
+  # Keep GitHub Actions used by CI up to date (also enables SHA-pin bumping).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
