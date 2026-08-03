@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least-privilege: CI only needs to read the repo.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fantasy-ldf
+    steps:
+      # Action versions are managed by Dependabot (github-actions ecosystem);
+      # pin to full commit SHAs for stricter supply-chain hardening.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: fantasy-ldf/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        # Placeholder values — the build only needs these to be present/parseable
+        # (module-level Supabase URL + DB client init). No real secrets in CI.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          DATABASE_URL: postgresql://user:pass@localhost:5432/postgres
+          DIRECT_URL: postgresql://user:pass@localhost:5432/postgres
+
+      # Informational: surfaces production (runtime) advisories without failing
+      # the build on transitive ones we can't fix directly.
+      - name: Audit (production deps)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true

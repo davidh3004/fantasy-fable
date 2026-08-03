@@ -3,6 +3,7 @@
  * No auth here — callers must gate access (admin action / dev scripts).
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { and, asc, count, eq, gt, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -214,6 +215,7 @@ export async function runFinalizeGameweek(
         .where(eq(gameweeks.id, gameweekId));
     });
   } catch (err) {
+    Sentry.captureException(err);
     console.error("finalizeGameweek failed:", err);
     return { error: "unknown" };
   }

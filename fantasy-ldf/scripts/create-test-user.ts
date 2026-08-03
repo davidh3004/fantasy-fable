@@ -9,8 +9,19 @@ config({ path: ".env.local" });
 
 import postgres from "postgres";
 
-const EMAIL = "test-user@example.com";
-const PASSWORD = "TestUser1234!";
+const EMAIL = process.env.TEST_USER_EMAIL ?? "test-user@example.com";
+
+function requireTestPassword(): string {
+  const pw = process.env.TEST_USER_PASSWORD;
+  if (!pw || pw.length < 8) {
+    console.error(
+      "Set TEST_USER_PASSWORD (min 8 chars) in .env.local before running this script."
+    );
+    process.exit(1);
+  }
+  return pw;
+}
+const PASSWORD = requireTestPassword();
 
 async function main() {
   const sql = postgres(process.env.DATABASE_URL!, { prepare: false, max: 1 });

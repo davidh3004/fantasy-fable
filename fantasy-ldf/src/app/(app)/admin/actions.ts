@@ -1,5 +1,6 @@
 "use server";
 
+import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
 import { and, count, eq, or } from "drizzle-orm";
 import { db } from "@/db";
@@ -481,6 +482,7 @@ export async function saveMatchResult(
         .where(eq(fixtures.id, fixtureId));
     });
   } catch (err) {
+    Sentry.captureException(err);
     console.error("saveMatchResult failed:", err);
     return fail("unknown");
   }

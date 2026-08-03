@@ -12,6 +12,18 @@ const REF = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(
   "."
 )[0];
 
+const TEST_EMAIL = process.env.TEST_USER_EMAIL ?? "test-user@example.com";
+
+function requireTestPassword(): string {
+  const pw = process.env.TEST_USER_PASSWORD;
+  if (!pw) {
+    console.error("Set TEST_USER_PASSWORD in .env.local before running this script.");
+    process.exit(1);
+  }
+  return pw;
+}
+const TEST_PASSWORD = requireTestPassword();
+
 function chunkCookie(name: string, value: string): string {
   // Mirrors @supabase/ssr: values > 3180 chars are split into name.0, name.1…
   const MAX = 3180;
@@ -33,8 +45,8 @@ async function main() {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        email: "test-user@example.com",
-        password: "TestUser1234!",
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
       }),
     }
   );

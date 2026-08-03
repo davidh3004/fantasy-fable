@@ -1,5 +1,6 @@
 "use server";
 
+import * as Sentry from "@sentry/nextjs";
 import { redirect } from "next/navigation";
 import { eq, inArray } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
@@ -171,6 +172,7 @@ export async function createFantasyTeam(
   } catch (err: unknown) {
     // Unique violation = double submit / already has a team this season.
     if ((err as { code?: string }).code === "23505") redirect("/home");
+    Sentry.captureException(err);
     console.error("createFantasyTeam failed:", err);
     return { error: "unknown" };
   }
