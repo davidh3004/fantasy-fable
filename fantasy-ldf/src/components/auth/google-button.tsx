@@ -1,8 +1,8 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { signInWithGoogle } from "@/app/(auth)/actions";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
 function GoogleIcon() {
@@ -28,26 +28,46 @@ function GoogleIcon() {
   );
 }
 
-function GoogleButtonContent({ label }: { label: string }) {
-  const { pending } = useFormStatus();
+/**
+ * Google OAuth is initiated from the browser client so the PKCE code verifier
+ * is written as a browser cookie the /auth/callback route can read back. (A
+ * server-action initiation can drop that cookie across the provider redirect,
+ * which surfaces as "invalid or expired link" at code exchange.)
+ */
+export function GoogleButton({ label }: { label: string }) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleClick() {
+    setLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    // On success the SDK redirects the browser to Google; we only reach here
+    // if starting the flow failed.
+    if (error) {
+      setLoading(false);
+      window.location.href = "/login?error=oauth";
+    }
+  }
 
   return (
     <Button
-      type="submit"
+      type="button"
       variant="outline"
-      disabled={pending}
+      onClick={handleClick}
+      disabled={loading}
       className="h-11 w-full cursor-pointer"
     >
-      {pending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <GoogleIcon />}
+      {loading ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden />
+      ) : (
+        <GoogleIcon />
+      )}
       {label}
     </Button>
-  );
-}
-
-export function GoogleButton({ label }: { label: string }) {
-  return (
-    <form action={signInWithGoogle}>
-      <GoogleButtonContent label={label} />
-    </form>
   );
 }
