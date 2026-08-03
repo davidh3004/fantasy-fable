@@ -22,7 +22,7 @@ jobs:
     steps:
       # Action versions are managed by Dependabot (github-actions ecosystem);
       # pin to full commit SHAs for stricter supply-chain hardening.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
