@@ -3,7 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verifyAccessToken } from "@/lib/supabase/jwt";
 
 // Paths reachable without a session. Everything else requires auth.
-const PUBLIC_PATHS = ["/login", "/register", "/reset-password", "/auth"];
+// (/api/sentry-check is token-gated in the handler; public so it's curl-able.)
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/reset-password",
+  "/auth",
+  "/api/sentry-check",
+];
 // Authed users get bounced away from these (update-password stays reachable
 // because the recovery flow arrives with a session).
 const AUTH_ONLY_BOUNCE = ["/login", "/register"];
