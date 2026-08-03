@@ -76,20 +76,6 @@ export async function register(
   return { success: "checkEmail" };
 }
 
-export async function signInWithGoogle() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${await getOrigin()}/auth/callback`,
-    },
-  });
-
-  if (error || !data.url) redirect("/login?error=oauth");
-
-  redirect(data.url);
-}
-
 export async function resetPassword(
   _prev: AuthState,
   formData: FormData
