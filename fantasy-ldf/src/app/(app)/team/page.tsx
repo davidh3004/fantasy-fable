@@ -23,6 +23,7 @@ import {
   toSquadSettings,
   type TeamGameweek,
 } from "@/lib/game/queries";
+import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -40,11 +41,10 @@ export default async function TeamPage({
   const { gw } = await searchParams;
   const { season, settings } = await getActiveSeasonContext();
 
-  const [team, nextGameweek, t, tNav, locale] = await Promise.all([
+  const [team, nextGameweek, t, locale] = await Promise.all([
     getUserFantasyTeam(user.id, season.id),
     getNextGameweek(season.id),
     getTranslations("team"),
-    getTranslations("nav"),
     getLocale(),
   ]);
   if (!team) redirect("/onboarding");
@@ -78,8 +78,7 @@ export default async function TeamPage({
     const initial = buildInitialLineup(squad);
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        <h1 className="font-heading text-2xl">{tNav("team")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{team.name}</p>
+        <h1 className="truncate font-heading text-2xl">{team.name}</h1>
         <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-muted-foreground">
           <CalendarOff className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>{t("noGameweek")}</span>
@@ -118,6 +117,8 @@ export default async function TeamPage({
 
   const opponents: Record<string, OpponentInfo> = {};
   const liveClubs = new Set<string>();
+  // Clubs whose match is in play *right now* — these get the gold treatment.
+  const playingClubs = new Set<string>();
   for (const fixture of gameweekFixtures) {
     opponents[fixture.homeClubId] = { opp: fixture.awayShort, home: true };
     opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
@@ -125,7 +126,14 @@ export default async function TeamPage({
       liveClubs.add(fixture.homeClubId);
       liveClubs.add(fixture.awayClubId);
     }
+    if (fixture.status === "live") {
+      playingClubs.add(fixture.homeClubId);
+      playingClubs.add(fixture.awayClubId);
+    }
   }
+  const livePlayerIds = squad
+    .filter((player) => playingClubs.has(player.clubId))
+    .map((player) => player.id);
 
   // Points to show under each player.
   const pointsByPlayer: Record<string, number> = {};
@@ -181,17 +189,33 @@ export default async function TeamPage({
         ? t("finishedSub")
         : formatDeadline(selected.deadline, locale);
 
+  const gameweekPoints = await getTeamGameweekPoints(
+    team.id,
+    selected,
+    squadSettings
+  );
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mb-4">
-        <h1 className="font-heading text-2xl">{tNav("team")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{team.name}</p>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <h1 className="min-w-0 truncate font-heading text-2xl">{team.name}</h1>
+        {gameweekPoints != null && (
+          <p className="shrink-0 text-right">
+            <span className="font-heading text-2xl tabular-nums">
+              {gameweekPoints}
+            </span>{" "}
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              {t("ptsLabel")}
+            </span>
+          </p>
+        )}
       </div>
 
       <GameweekNav
         number={selected.number}
         statusLabel={statusLabel}
         subLabel={subLabel}
+        isLive={isLive}
         prevNumber={
           selectedIndex > 0 ? viewable[selectedIndex - 1].number : null
         }
@@ -213,6 +237,7 @@ export default async function TeamPage({
           locked={!isEditable}
           opponents={opponents}
           pointsByPlayer={pointsByPlayer}
+          livePlayerIds={livePlayerIds}
         />
       </div>
     </main>

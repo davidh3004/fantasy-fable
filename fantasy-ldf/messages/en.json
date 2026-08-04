@@ -139,6 +139,11 @@
       "lineup_invalid": "The lineup is not valid. Check your eleven and your bench.",
       "captain_invalid": "Pick a distinct captain and vice from your starting eleven.",
       "unknown": "Something went wrong. Try again."
+    },
+    "created": {
+      "title": "Your team is ready!",
+      "body": "You're all set. Taking you to your dashboard...",
+      "redirecting": "Redirecting to your dashboard"
     }
   },
   "positions": {
@@ -351,7 +356,8 @@
       "captain_invalid": "Captain and vice must be different starters.",
       "no_team": "You don't have a team yet.",
       "unknown": "Something went wrong. Try again."
-    }
+    },
+    "ptsLabel": "pts"
   },
   "comingSoon": {
     "title": "Under construction",

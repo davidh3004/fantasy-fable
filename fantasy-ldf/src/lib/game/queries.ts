@@ -242,27 +242,6 @@ export async function getFixturesForGameweek(
     .orderBy(asc(fixtures.kickoff));
 }
 
-/** Most recent lineup (by gameweek number) for a user's team this season. */
-export async function getLatestLineupForUser(userId: string, seasonId: string) {
-  const [row] = await db
-    .select({
-      points: gameweekLineups.points,
-      gameweekNumber: gameweeks.number,
-    })
-    .from(gameweekLineups)
-    .innerJoin(gameweeks, eq(gameweekLineups.gameweekId, gameweeks.id))
-    .innerJoin(
-      fantasyTeams,
-      eq(gameweekLineups.fantasyTeamId, fantasyTeams.id)
-    )
-    .where(
-      and(eq(fantasyTeams.userId, userId), eq(fantasyTeams.seasonId, seasonId))
-    )
-    .orderBy(desc(gameweeks.number))
-    .limit(1);
-  return row ?? null;
-}
-
 /** Fixtures of the next upcoming gameweek, one round-trip via subquery. */
 export async function getFixturesForNextGameweek(
   seasonId: string
@@ -363,6 +342,27 @@ export async function getLineupPicks(
       )
     )
     .orderBy(asc(lineupPicks.slot));
+}
+
+/** The saved lineup row for a team in one gameweek (points snapshot + hits). */
+export async function getLineupSummary(
+  fantasyTeamId: string,
+  gameweekId: string
+): Promise<{ points: number | null; transfersCost: number } | null> {
+  const [row] = await db
+    .select({
+      points: gameweekLineups.points,
+      transfersCost: gameweekLineups.transfersCost,
+    })
+    .from(gameweekLineups)
+    .where(
+      and(
+        eq(gameweekLineups.fantasyTeamId, fantasyTeamId),
+        eq(gameweekLineups.gameweekId, gameweekId)
+      )
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 /** Most recent gameweek whose deadline has passed (live or finished). Null

@@ -284,6 +284,54 @@
   animation: ldf-ready-glow 1.8s ease-out infinite;
 }
 
+/* --- Team-created celebration ------------------------------------------- */
+
+@keyframes ldf-confetti {
+  0% {
+    opacity: 0;
+    transform: translateY(-10vh) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(105vh) rotate(540deg);
+  }
+}
+
+@keyframes ldf-ping-ring {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+@keyframes ldf-countdown-bar {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@utility animate-confetti {
+  animation: ldf-confetti 2.6s linear infinite;
+}
+
+@utility animate-ping-ring {
+  animation: ldf-ping-ring 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@utility animate-countdown-bar {
+  animation: ldf-countdown-bar linear forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-pop-in,
@@ -292,9 +340,16 @@
   .animate-step-back,
   .animate-nudge,
   .animate-float,
-  .animate-ready-glow {
+  .animate-ready-glow,
+  .animate-ping-ring,
+  .animate-countdown-bar {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+  /* Confetti is pure decoration — hide it rather than freeze it mid-fall. */
+  .animate-confetti {
+    animation: none !important;
+    display: none !important;
   }
 }

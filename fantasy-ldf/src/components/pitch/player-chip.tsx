@@ -16,6 +16,8 @@ type PlayerChipProps = {
   benchOrder?: number;
   /** Marks an incoming transfer (green arrow, top-left corner). */
   transferIn?: boolean;
+  /** Player's match is in play — gold border + gold points strip. */
+  live?: boolean;
   disabled?: boolean;
   onClick?: () => void;
   /**
@@ -92,6 +94,7 @@ export function PlayerChip({
   vice = false,
   benchOrder,
   transferIn = false,
+  live = false,
   disabled = false,
   onClick,
   onSwapWith,
@@ -198,6 +201,8 @@ export function PlayerChip({
         // Fluid width so a full position line (up to 5) always fits the pitch
         // on any screen; capped so lines with few players don't grow huge.
         "relative flex w-full min-w-0 max-w-[4.8rem] flex-col items-center rounded-lg",
+        // Gold ring while the player's match is in play (selection wins).
+        live && !selected && "ring-2 ring-amber-400",
         // The selection ring wraps the whole card, not just the photo.
         selected && "ring-2 ring-cta",
         // Highlight while another card is dragged over this one.
@@ -281,7 +286,14 @@ export function PlayerChip({
         {player.lastName}
       </span>
       {caption && (
-        <span className="w-full truncate rounded-b-lg bg-black/45 px-1 py-px text-center text-[9px] uppercase tracking-wide text-white/80">
+        <span
+          className={cn(
+            "w-full truncate rounded-b-lg px-1 py-px text-center text-[9px] uppercase tracking-wide",
+            live
+              ? "bg-amber-400 font-bold text-amber-950"
+              : "bg-black/45 text-white/80"
+          )}
+        >
           {caption}
         </span>
       )}

@@ -33,6 +33,8 @@ type LineupEditorProps = {
   opponents: Record<string, OpponentInfo>;
   /** playerId → points, once the gameweek has been scored. */
   pointsByPlayer: Record<string, number>;
+  /** playerIds whose match is in play right now (gold treatment). */
+  livePlayerIds?: string[];
 };
 
 export function LineupEditor({
@@ -44,9 +46,14 @@ export function LineupEditor({
   locked,
   opponents,
   pointsByPlayer,
+  livePlayerIds,
 }: LineupEditorProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positionsShort");
+  const livePlayers = useMemo(
+    () => new Set(livePlayerIds ?? []),
+    [livePlayerIds]
+  );
 
   const [lineup, setLineup] = useState(initialLineup);
   const [captainId, setCaptainId] = useState(initialCaptainId);
@@ -228,6 +235,7 @@ export function LineupEditor({
         captain={player.id === captainId}
         vice={player.id === viceId}
         benchOrder={benchOrder}
+        live={livePlayers.has(player.id)}
         disabled={locked}
         onClick={() => handleTap(player.id)}
         onSwapWith={(targetId) => handleDragSwap(player.id, targetId)}

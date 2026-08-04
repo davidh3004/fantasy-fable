@@ -139,6 +139,11 @@
       "lineup_invalid": "La alineación no es válida. Revisa tu once y tu banca.",
       "captain_invalid": "Elige un capitán y un vice distintos dentro de tu once.",
       "unknown": "Algo salió mal. Intenta de nuevo."
+    },
+    "created": {
+      "title": "¡Tu equipo está listo!",
+      "body": "Todo listo. Te llevamos a tu panel...",
+      "redirecting": "Redirigiendo a tu panel"
     }
   },
   "positions": {
@@ -351,7 +356,8 @@
       "captain_invalid": "Capitán y vice deben ser titulares distintos.",
       "no_team": "Todavía no tienes equipo.",
       "unknown": "Algo salió mal. Intenta de nuevo."
-    }
+    },
+    "ptsLabel": "pts"
   },
   "comingSoon": {
     "title": "En construcción",
