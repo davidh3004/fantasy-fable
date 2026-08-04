@@ -116,6 +116,7 @@ export function CaptainStep({
       </div>
 
       <PitchView
+        animateEntrance
         groups={groups}
         renderPlayer={(player) => (
           <PlayerChip

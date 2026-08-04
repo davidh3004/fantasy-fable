@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { Shirt, Trophy, Wallet, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -46,8 +46,13 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col">
-      <h2 className="font-heading text-2xl">{t("title")}</h2>
-      <p className="mt-1.5 text-muted-foreground">{t("intro")}</p>
+      <h2 className="animate-fade-up font-heading text-2xl">{t("title")}</h2>
+      <p
+        className="animate-fade-up mt-1.5 text-muted-foreground"
+        style={{ "--i": 1 } as CSSProperties}
+      >
+        {t("intro")}
+      </p>
 
       {/* Swipeable carousel — one help card per view. */}
       <div
@@ -55,21 +60,36 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
         onScroll={handleScroll}
         className="mt-6 flex snap-x snap-mandatory overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {CARDS.map(({ key, Icon }) => (
-          <div key={key} className="w-full shrink-0 basis-full snap-center px-0.5">
-            <div className="flex min-h-72 flex-col items-center justify-center gap-5 rounded-2xl border border-border bg-card p-8 text-center">
-              <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/15">
-                <Icon className="size-8 text-primary" aria-hidden />
-              </div>
-              <div className="max-w-sm">
-                <p className="font-heading text-xl">{t(`cards.${key}.title`)}</p>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {t(`cards.${key}.body`, cardParams)}
-                </p>
+        {CARDS.map(({ key, Icon }, index) => {
+          const isActive = index === active;
+          return (
+            <div key={key} className="w-full shrink-0 basis-full snap-center px-0.5">
+              <div
+                className={cn(
+                  "flex min-h-72 flex-col items-center justify-center gap-5 rounded-2xl border bg-card p-8 text-center transition-all duration-300",
+                  isActive
+                    ? "border-primary/40 shadow-lg shadow-primary/5"
+                    : "border-border opacity-60"
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex size-16 items-center justify-center rounded-2xl bg-primary/15 transition-transform duration-300",
+                    isActive && "animate-float"
+                  )}
+                >
+                  <Icon className="size-8 text-primary" aria-hidden />
+                </div>
+                <div className="max-w-sm">
+                  <p className="font-heading text-xl">{t(`cards.${key}.title`)}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {t(`cards.${key}.body`, cardParams)}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Dot indicators (tap to jump). */}
@@ -92,9 +112,15 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
       <Button
         type="button"
         onClick={() => (isLast ? onContinue() : goTo(active + 1))}
-        className="mt-8 h-11 w-full cursor-pointer font-semibold"
+        className={cn(
+          "mt-8 h-11 w-full cursor-pointer font-semibold transition-transform active:scale-[0.98]",
+          isLast && "animate-ready-glow"
+        )}
       >
-        {isLast ? t("start") : t("next")}
+        {/* keyed so the label pops when it switches to "Empezar" */}
+        <span key={isLast ? "start" : "next"} className="animate-pop-in">
+          {isLast ? t("start") : t("next")}
+        </span>
       </Button>
     </div>
   );

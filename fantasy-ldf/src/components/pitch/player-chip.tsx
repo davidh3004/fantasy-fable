@@ -128,9 +128,11 @@ export function PlayerChip({
       </span>
 
       {(captain || vice) && (
+        // Keyed on the role so the armband re-pops when C/V changes hands.
         <span
+          key={captain ? "captain" : "vice"}
           className={cn(
-            "absolute -top-1.5 -right-1 z-[1] flex size-5 items-center justify-center rounded-full text-[10px] font-bold shadow",
+            "animate-pop-in absolute -top-1.5 -right-1 z-[1] flex size-5 items-center justify-center rounded-full text-[10px] font-bold shadow",
             captain
               ? "bg-yellow-400 text-yellow-950"
               : "bg-slate-200 text-slate-800"

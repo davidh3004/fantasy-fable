@@ -124,7 +124,7 @@ export function LineupStep({
         />
       )}
 
-      <PitchView groups={groups} renderPlayer={(p) => chip(p)} />
+      <PitchView groups={groups} renderPlayer={(p) => chip(p)} animateEntrance />
 
       {/* Bench: slot 0 fixed GK, then outfield substitutes in priority order */}
       <section
