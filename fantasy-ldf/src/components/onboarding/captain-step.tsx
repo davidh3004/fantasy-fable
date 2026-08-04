@@ -36,6 +36,7 @@ export function CaptainStep({
 }: CaptainStepProps) {
   const t = useTranslations("onboarding.captain");
   const tCommon = useTranslations("onboarding");
+  const tPos = useTranslations("positionsShort");
   const [mode, setMode] = useState<"captain" | "vice">("captain");
 
   const byId = useMemo(
@@ -122,6 +123,7 @@ export function CaptainStep({
           <PlayerChip
             key={player.id}
             player={player}
+            caption={tPos(player.position)}
             captain={player.id === captainId}
             vice={player.id === viceId}
             onClick={() => handleTap(player.id)}

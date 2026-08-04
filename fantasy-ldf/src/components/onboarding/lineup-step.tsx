@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { PitchView } from "@/components/pitch/pitch-view";
 import { PlayerChip } from "@/components/pitch/player-chip";
+import { useFlip } from "@/components/pitch/use-flip";
 import { trySwap, type LineupState } from "@/lib/game/lineup";
 import { POSITION_ORDER, type Position, type SquadSettings } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
@@ -33,6 +34,7 @@ export function LineupStep({
   const tPos = useTranslations("positionsShort");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [swapError, setSwapError] = useState<string | null>(null);
+  const { register, snapshot } = useFlip(lineup);
 
   const byId = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
@@ -77,12 +79,28 @@ export function LineupStep({
       return;
     }
     if (result.state) {
+      snapshot();
       onLineupChange(result.state);
       setSelectedId(null);
       return;
     }
     // No-op pair (e.g. two starters): move the selection instead.
     setSelectedId(id);
+  }
+
+  /** Drag-and-drop swap: source card dropped onto the target card. */
+  function handleDragSwap(sourceId: string, targetId: string) {
+    setSwapError(null);
+    setSelectedId(null);
+    const result = trySwap(lineup, sourceId, targetId, byId, settings);
+    if (result.error) {
+      setSwapError(result.error);
+      return;
+    }
+    if (result.state) {
+      snapshot();
+      onLineupChange(result.state);
+    }
   }
 
   /** Dim players that can't complete a swap with the current selection. */
@@ -96,12 +114,14 @@ export function LineupStep({
     return (
       <PlayerChip
         key={player.id}
+        ref={register(player.id)}
         player={player}
         caption={tPos(player.position)}
         selected={selectedId === player.id}
         dimmed={isDimmed(player.id)}
         benchOrder={benchOrder}
         onClick={() => handleTap(player.id)}
+        onSwapWith={(targetId) => handleDragSwap(player.id, targetId)}
       />
     );
   }

@@ -27,9 +27,13 @@ export function PitchView({
 }: PitchViewProps) {
   return (
     <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-xl">
-      <div className="relative aspect-[3/4] max-h-[min(62vh,34rem)] min-h-[24rem] w-full bg-gradient-to-b from-[#15532e] via-[#1b6b3a] to-[#155230]">
+      {/* min-h wins over max-h when the two conflict, so the four card rows can
+          never be squeezed past the pitch edge on short viewports. */}
+      <div className="relative aspect-[3/4] max-h-[min(62vh,34rem)] min-h-[26rem] w-full bg-gradient-to-b from-[#15532e] via-[#1b6b3a] to-[#155230]">
         <PitchMarkings />
-        <div className="relative z-[1] flex h-full flex-col justify-between px-3 py-5 sm:px-5">
+        {/* py clears the painted boundary line (3% inset) plus the C/V badge
+            that overhangs the top of a card. */}
+        <div className="relative z-[1] flex h-full flex-col justify-between px-3 py-6 sm:px-5">
           {PITCH_LINES.map((line, index) => (
             <div
               key={line}

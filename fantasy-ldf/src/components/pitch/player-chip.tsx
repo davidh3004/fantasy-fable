@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MarketPlayer } from "@/lib/game/queries";
@@ -17,6 +18,11 @@ type PlayerChipProps = {
   transferIn?: boolean;
   disabled?: boolean;
   onClick?: () => void;
+  /**
+   * Enables pointer drag-to-swap: drag this card onto another and this fires
+   * with the drop target's player id. Tap-to-swap keeps working alongside it.
+   */
+  onSwapWith?: (targetPlayerId: string) => void;
   ref?: React.Ref<HTMLButtonElement>;
 };
 
@@ -67,6 +73,15 @@ export function ClubBadge({
   );
 }
 
+const DRAG_THRESHOLD_PX = 6;
+
+/** Clears the drop-target highlight from every chip on the page. */
+function clearDropTargets() {
+  document
+    .querySelectorAll("[data-drop-target]")
+    .forEach((el) => el.removeAttribute("data-drop-target"));
+}
+
 /** Tappable player card used on the pitch and the bench. */
 export function PlayerChip({
   player,
@@ -79,31 +94,125 @@ export function PlayerChip({
   transferIn = false,
   disabled = false,
   onClick,
+  onSwapWith,
   ref,
 }: PlayerChipProps) {
+  const innerRef = useRef<HTMLButtonElement | null>(null);
+  const startRef = useRef<{ x: number; y: number } | null>(null);
+  const draggedRef = useRef(false);
+  const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
+
+  const dragEnabled = Boolean(onSwapWith) && !disabled;
+
+  function setRefs(el: HTMLButtonElement | null) {
+    innerRef.current = el;
+    if (typeof ref === "function") ref(el);
+    else if (ref)
+      (ref as React.RefObject<HTMLButtonElement | null>).current = el;
+  }
+
+  /** The chip under the pointer, ignoring the one being dragged. */
+  function chipAt(x: number, y: number): string | null {
+    const node = innerRef.current;
+    if (!node) return null;
+    const previous = node.style.pointerEvents;
+    node.style.pointerEvents = "none"; // so we hit what's underneath
+    const element = document.elementFromPoint(x, y);
+    node.style.pointerEvents = previous;
+    const chip = element?.closest?.("[data-player-id]") as HTMLElement | null;
+    const id = chip?.dataset.playerId;
+    return id && id !== player.id ? id : null;
+  }
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!dragEnabled || event.button !== 0) return;
+    startRef.current = { x: event.clientX, y: event.clientY };
+    draggedRef.current = false;
+    innerRef.current?.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const start = startRef.current;
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (!draggedRef.current && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+
+    draggedRef.current = true;
+    setOffset({ x: dx, y: dy });
+
+    clearDropTargets();
+    const targetId = chipAt(event.clientX, event.clientY);
+    if (targetId) {
+      document
+        .querySelector(`[data-player-id="${targetId}"]`)
+        ?.setAttribute("data-drop-target", "true");
+    }
+  }
+
+  function endDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!startRef.current) return;
+    const wasDragging = draggedRef.current;
+    startRef.current = null;
+    setOffset(null);
+
+    if (wasDragging) {
+      const targetId = chipAt(event.clientX, event.clientY);
+      clearDropTargets();
+      if (targetId) onSwapWith?.(targetId);
+      // Let the synthetic click fire first, then re-enable tap handling.
+      setTimeout(() => {
+        draggedRef.current = false;
+      }, 0);
+    }
+  }
+
+  const isDragging = offset !== null;
+
   return (
     <button
-      ref={ref}
+      ref={setRefs}
       type="button"
-      onClick={onClick}
+      data-player-id={player.id}
+      onClick={() => {
+        if (draggedRef.current) return; // this was a drag, not a tap
+        onClick?.();
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       disabled={disabled}
       aria-pressed={selected}
       aria-label={`${player.firstName} ${player.lastName}`}
+      style={{
+        ...(isDragging
+          ? {
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(1.12) rotate(2deg)`,
+              zIndex: 50,
+            }
+          : null),
+        ...(dragEnabled ? { touchAction: "none" } : null),
+      }}
       className={cn(
         // Fluid width so a full position line (up to 5) always fits the pitch
         // on any screen; capped so lines with few players don't grow huge.
-        "relative flex w-full min-w-0 max-w-[4.8rem] flex-col items-center transition-all",
+        "relative flex w-full min-w-0 max-w-[4.8rem] flex-col items-center rounded-lg",
+        // The selection ring wraps the whole card, not just the photo.
+        selected && "ring-2 ring-cta",
+        // Highlight while another card is dragged over this one.
+        "data-[drop-target=true]:ring-2 data-[drop-target=true]:ring-emerald-400",
+        isDragging
+          ? "cursor-grabbing shadow-2xl"
+          : "transition-all duration-200",
         dimmed && "opacity-35",
-        disabled ? "cursor-default" : "cursor-pointer",
-        !dimmed && !disabled && "hover:-translate-y-0.5"
+        disabled ? "cursor-default" : dragEnabled ? "cursor-grab" : "cursor-pointer",
+        !dimmed && !disabled && !isDragging && "hover:-translate-y-0.5"
       )}
     >
       {/* Photo area, tinted with the club color */}
       <span
-        className={cn(
-          "relative flex h-12 w-full items-end justify-center overflow-hidden rounded-t-lg sm:h-13",
-          selected && "ring-2 ring-cta"
-        )}
+        className="relative flex h-12 w-full items-end justify-center overflow-hidden rounded-t-lg sm:h-13"
         style={{
           background: `linear-gradient(180deg, ${player.clubColor ?? "#7c3aed"}cc 0%, ${player.clubColor ?? "#7c3aed"}66 100%)`,
         }}
@@ -115,6 +224,7 @@ export function PlayerChip({
             src={player.photoUrl}
             alt=""
             referrerPolicy="no-referrer"
+            draggable={false}
             className="h-full w-full object-cover object-top"
           />
         ) : (
@@ -162,7 +272,12 @@ export function PlayerChip({
       )}
 
       {/* Name plate */}
-      <span className="w-full truncate bg-[#10102a]/95 px-1 py-0.5 text-center text-[10px] font-semibold leading-tight text-foreground">
+      <span
+        className={cn(
+          "w-full truncate bg-[#10102a]/95 px-1 py-0.5 text-center text-[10px] font-semibold leading-tight text-foreground",
+          !caption && "rounded-b-lg"
+        )}
+      >
         {player.lastName}
       </span>
       {caption && (

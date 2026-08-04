@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Loader2, RotateCcw, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -14,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { PitchView } from "@/components/pitch/pitch-view";
 import { PlayerChip } from "@/components/pitch/player-chip";
+import { useFlip } from "@/components/pitch/use-flip";
 import { PlayerModal } from "@/components/team/player-modal";
 import { cn } from "@/lib/utils";
 import { saveLineup } from "@/app/(app)/team/actions";
@@ -63,10 +58,8 @@ export function LineupEditor({
   const [dirty, setDirty] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // FLIP animation bookkeeping: chip elements by player id + their rects
-  // captured right before a lineup change.
-  const chipRefs = useRef(new Map<string, HTMLButtonElement>());
-  const prevRects = useRef<Map<string, DOMRect> | null>(null);
+  // Chips glide to their new slots after a swap.
+  const { register, snapshot } = useFlip(lineup);
 
   const byId = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
@@ -89,42 +82,6 @@ export function LineupEditor({
     }
     return result;
   }, [lineup.starterIds, byId]);
-
-  useLayoutEffect(() => {
-    const prev = prevRects.current;
-    prevRects.current = null;
-    if (!prev) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    for (const [id, el] of chipRefs.current) {
-      const before = prev.get(id);
-      if (!before) continue;
-      const after = el.getBoundingClientRect();
-      const dx = before.left - after.left;
-      const dy = before.top - after.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-      el.animate(
-        [
-          { transform: `translate(${dx}px, ${dy}px)`, zIndex: "10" },
-          { transform: "translate(0, 0)", zIndex: "10" },
-        ],
-        { duration: 350, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }
-      );
-    }
-  }, [lineup]);
-
-  function snapshotRects() {
-    prevRects.current = new Map(
-      [...chipRefs.current].map(([id, el]) => [id, el.getBoundingClientRect()])
-    );
-  }
-
-  function registerChip(id: string) {
-    return (el: HTMLButtonElement | null) => {
-      if (el) chipRefs.current.set(id, el);
-      else chipRefs.current.delete(id);
-    };
-  }
 
   const benchPlayers = lineup.benchIds.map((id) => byId.get(id)!);
   const selected = selectedId ? byId.get(selectedId) : null;
@@ -173,7 +130,25 @@ export function LineupEditor({
       return;
     }
     if (result.state) {
-      snapshotRects();
+      snapshot();
+      setLineup(result.state);
+      reconcileCaptaincy(result.state);
+      setDirty(true);
+    }
+    clearSelection();
+  }
+
+  /** Drag-and-drop swap: source card dropped onto the target card. */
+  function handleDragSwap(sourceId: string, targetId: string) {
+    if (locked) return;
+    setMessage(null);
+    const result = trySwap(lineup, sourceId, targetId, byId, settings);
+    if (result.error) {
+      setMessage(result.error);
+      return;
+    }
+    if (result.state) {
+      snapshot();
       setLineup(result.state);
       reconcileCaptaincy(result.state);
       setDirty(true);
@@ -195,7 +170,7 @@ export function LineupEditor({
   }
 
   function handleDiscard() {
-    snapshotRects();
+    snapshot();
     setLineup(initialLineup);
     setCaptainId(initialCaptainId);
     setViceId(initialViceId);
@@ -245,7 +220,7 @@ export function LineupEditor({
     return (
       <PlayerChip
         key={player.id}
-        ref={registerChip(player.id)}
+        ref={register(player.id)}
         player={player}
         caption={caption(player)}
         selected={selectedId === player.id}
@@ -255,6 +230,7 @@ export function LineupEditor({
         benchOrder={benchOrder}
         disabled={locked}
         onClick={() => handleTap(player.id)}
+        onSwapWith={(targetId) => handleDragSwap(player.id, targetId)}
       />
     );
   }
