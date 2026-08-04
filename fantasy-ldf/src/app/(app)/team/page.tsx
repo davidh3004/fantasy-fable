@@ -66,7 +66,23 @@ export default async function TeamPage({
     viewable.sort((a, b) => a.number - b.number);
   }
 
-  const defaultNumber = nextGameweek?.number ?? viewable.at(-1)?.number;
+  const now = new Date();
+
+  // Default view, in priority order:
+  //   1. the gameweek in play (deadline passed, not finalized yet)
+  //   2. the upcoming editable one
+  //   3. the most recent gameweek we have a lineup for
+  // Without (1) a live gameweek is skipped entirely the moment the next one
+  // is scheduled, which hides the squad that's actually scoring right now.
+  const liveGameweek = viewable
+    .filter((g) => g.status !== "finished" && g.deadline <= now)
+    .at(-1);
+  const upcomingGameweek = nextGameweek
+    ? viewable.find((g) => g.id === nextGameweek.id)
+    : undefined;
+  const defaultNumber =
+    liveGameweek?.number ?? upcomingGameweek?.number ?? viewable.at(-1)?.number;
+
   const requested = Number(gw);
   const selectedNumber = viewable.some((g) => g.number === requested)
     ? requested
@@ -102,7 +118,6 @@ export default async function TeamPage({
     );
   }
 
-  const now = new Date();
   const isFinalized = selected.status === "finished";
   const isEditable =
     nextGameweek != null &&
