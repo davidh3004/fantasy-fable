@@ -516,7 +516,8 @@
         "penaltiesMissed": "PkM",
         "yellowCards": "YC",
         "redCards": "RC",
-        "ownGoals": "OG"
+        "ownGoals": "OG",
+        "points": "Pts"
       },
       "bonusTitle": "Bonus points",
       "bonusHint": "Pick the 3 best players of the match (3, 2 and 1 extra points).",
@@ -528,7 +529,42 @@
         "forbidden": "You don't have admin permissions.",
         "validation": "Check the score and stats.",
         "unknown": "Something went wrong. Try again."
-      }
+      },
+      "tabs": {
+        "lineups": "Lineups",
+        "live": "Live",
+        "all": "All stats"
+      },
+      "clock": "Match minute",
+      "clockHint": "Minutes played are derived from the lineup and substitutions against this clock. Sync it to real time or jump to full time.",
+      "syncClock": "Sync",
+      "fullTime": "Full time",
+      "lineupsHint": "Pick each team's starting eleven. Only these players appear in the Live tab, and their minutes run from kick-off until they're subbed off.",
+      "rapidTitle": "Quick actions",
+      "rapidHint": "Tap an action, then tap the player it belongs to.",
+      "rapidArmed": "{action} armed — now tap a player on the pitch.",
+      "noStarters": "No starting eleven picked yet.",
+      "subOff": "Substitute off",
+      "subPrompt": "{name} comes off at {minute}' — tap who comes on.",
+      "saveProgress": "Save progress",
+      "publish": "Publish result",
+      "publishConfirmTitle": "Publish the final result?",
+      "publishConfirmBody": "Minutes are frozen at full time and the match closes so the gameweek can be finalized. You can reopen it afterwards.",
+      "published": "Result published.",
+      "reopen": "Reopen match",
+      "reopened": "Match reopened for edits.",
+      "cancel": "Cancel",
+      "actions": {
+        "goals": "Goal",
+        "assists": "Assist",
+        "saves": "Save",
+        "yellowCards": "Yellow",
+        "redCards": "Red",
+        "penaltiesSaved": "Pen saved",
+        "penaltiesMissed": "Pen missed",
+        "ownGoals": "Own goal"
+      },
+      "undo": "Undo"
     },
     "settings": {
       "groups": {

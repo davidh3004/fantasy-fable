@@ -5,12 +5,17 @@ import { ArrowLeft } from "lucide-react";
 import { asc, eq, or } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 import { db } from "@/db";
-import { clubs, fixtures, playerMatchStats, players } from "@/db/schema";
-import { alias } from "drizzle-orm/pg-core";
 import {
-  ResultEditor,
-  type ExistingStat,
-} from "@/components/admin/result-editor";
+  clubs,
+  fixtures,
+  playerMatchStats,
+  players,
+  scoringRules,
+} from "@/db/schema";
+import { alias } from "drizzle-orm/pg-core";
+import { MatchConsole } from "@/components/admin/match-console";
+import type { LiveStatLine } from "@/app/(app)/admin/actions";
+import { getActiveSeasonContext } from "@/lib/game/queries";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("admin.nav");
@@ -25,6 +30,8 @@ export default async function AdminResultEntryPage({
   const { fixtureId } = await params;
   const t = await getTranslations("admin.result");
 
+  const { season, settings } = await getActiveSeasonContext();
+
   const homeClub = alias(clubs, "home_club");
   const awayClub = alias(clubs, "away_club");
   const [fixture] = await db
@@ -34,6 +41,8 @@ export default async function AdminResultEntryPage({
       awayClubId: fixtures.awayClubId,
       homeScore: fixtures.homeScore,
       awayScore: fixtures.awayScore,
+      status: fixtures.status,
+      kickoff: fixtures.kickoff,
       homeName: homeClub.name,
       awayName: awayClub.name,
     })
@@ -45,7 +54,7 @@ export default async function AdminResultEntryPage({
 
   if (!fixture) notFound();
 
-  const [playerRows, statRows] = await Promise.all([
+  const [playerRows, statRows, ruleRows] = await Promise.all([
     db
       .select({
         id: players.id,
@@ -66,9 +75,17 @@ export default async function AdminResultEntryPage({
       .select()
       .from(playerMatchStats)
       .where(eq(playerMatchStats.fixtureId, fixtureId)),
+    db
+      .select({
+        eventKey: scoringRules.eventKey,
+        position: scoringRules.position,
+        points: scoringRules.points,
+      })
+      .from(scoringRules)
+      .where(eq(scoringRules.seasonId, season.id)),
   ]);
 
-  const existingStats: ExistingStat[] = statRows.map((s) => ({
+  const existingStats: LiveStatLine[] = statRows.map((s) => ({
     playerId: s.playerId,
     minutes: s.minutes,
     goals: s.goals,
@@ -79,8 +96,13 @@ export default async function AdminResultEntryPage({
     yellowCards: s.yellowCards,
     redCards: s.redCards,
     ownGoals: s.ownGoals,
-    bonusPoints: s.bonusPoints,
+    started: s.started,
+    onMinute: s.onMinute,
+    offMinute: s.offMinute,
   }));
+
+  const bonusOf = (points: number) =>
+    statRows.find((s) => s.bonusPoints === points)?.playerId ?? "";
 
   return (
     <div className="flex flex-col gap-4">
@@ -92,11 +114,14 @@ export default async function AdminResultEntryPage({
         {t("back")}
       </Link>
 
-      <ResultEditor
+      <MatchConsole
         fixtureId={fixture.id}
+        kickoff={fixture.kickoff.toISOString()}
+        isFinished={fixture.status === "finished"}
         homeName={fixture.homeName}
         awayName={fixture.awayName}
         homeClubId={fixture.homeClubId}
+        awayClubId={fixture.awayClubId}
         initialHomeScore={fixture.homeScore}
         initialAwayScore={fixture.awayScore}
         players={playerRows.map((p) => ({
@@ -106,6 +131,13 @@ export default async function AdminResultEntryPage({
           clubId: p.clubId,
         }))}
         existingStats={existingStats}
+        existingBonus={{
+          first: bonusOf(3),
+          second: bonusOf(2),
+          third: bonusOf(1),
+        }}
+        rules={ruleRows}
+        startingSize={settings.startingSize}
       />
     </div>
   );

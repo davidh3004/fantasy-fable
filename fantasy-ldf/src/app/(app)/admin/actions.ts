@@ -22,6 +22,7 @@ import { runFinalizeGameweek } from "@/lib/game/finalize";
 import { requireAdminAction } from "@/lib/admin";
 import { pickedFile, uploadImage } from "@/lib/storage";
 import { buildRuleLookup, computePoints } from "@/lib/game/scoring";
+import { FULL_TIME_MINUTE, minutesPlayed } from "@/lib/game/match-clock";
 import { getActiveSeasonContext } from "@/lib/game/queries";
 import type { Position } from "@/lib/game/squad";
 
@@ -476,20 +477,40 @@ export type PlayerStatInput = {
   ownGoals: number;
 };
 
-export type SaveResultInput = {
+// ---------------------------------------------------------------------------
+// Live match console
+// ---------------------------------------------------------------------------
+
+export type LiveStatLine = PlayerStatInput & {
+  started: boolean;
+  onMinute: number | null;
+  offMinute: number | null;
+};
+
+export type SaveMatchProgressInput = {
   fixtureId: string;
   homeScore: number;
   awayScore: number;
-  stats: PlayerStatInput[];
-  bonus: { first?: string; second?: string; third?: string }; // 3 / 2 / 1 pts
+  /** Match clock the minutes are derived against. */
+  currentMinute: number;
+  lines: LiveStatLine[];
+  bonus?: { first?: string; second?: string; third?: string };
+  /** true = publish the final result and close the match. */
+  publish?: boolean;
 };
 
-export async function saveMatchResult(
-  input: SaveResultInput
+/**
+ * Writes the current state of a match. Called repeatedly while a match is in
+ * play (`publish: false`, fixture stays live so points tick up for everyone)
+ * and once at the end (`publish: true`, minutes frozen at full time and the
+ * fixture closed so the gameweek can be finalized).
+ */
+export async function saveMatchProgress(
+  input: SaveMatchProgressInput
 ): Promise<AdminActionState> {
   if (!(await requireAdminAction())) return fail("forbidden");
 
-  const { fixtureId, homeScore, awayScore, stats, bonus } = input;
+  const { fixtureId, homeScore, awayScore, lines, bonus, publish } = input;
   if (
     !Number.isInteger(homeScore) ||
     !Number.isInteger(awayScore) ||
@@ -506,59 +527,75 @@ export async function saveMatchResult(
     .limit(1);
   if (!fixture) return fail("validation");
 
-  const { season } = await getActiveSeasonContext();
-  const rules = await db
-    .select({
-      eventKey: scoringRules.eventKey,
-      position: scoringRules.position,
-      points: scoringRules.points,
-    })
-    .from(scoringRules)
-    .where(eq(scoringRules.seasonId, season.id));
-  const rule = buildRuleLookup(rules);
+  // Published results are scored at full time; a live save uses the clock.
+  const clock = publish
+    ? FULL_TIME_MINUTE
+    : Math.min(Math.max(input.currentMinute, 0), FULL_TIME_MINUTE);
 
-  // Authoritative player info (position + club side)
-  const clubPlayers = await db
-    .select({
-      id: players.id,
-      position: players.position,
-      clubId: players.clubId,
-    })
-    .from(players)
-    .where(
-      or(
-        eq(players.clubId, fixture.homeClubId),
-        eq(players.clubId, fixture.awayClubId)
-      )
-    );
+  const { season } = await getActiveSeasonContext();
+  const [rules, clubPlayers] = await Promise.all([
+    db
+      .select({
+        eventKey: scoringRules.eventKey,
+        position: scoringRules.position,
+        points: scoringRules.points,
+      })
+      .from(scoringRules)
+      .where(eq(scoringRules.seasonId, season.id)),
+    db
+      .select({
+        id: players.id,
+        position: players.position,
+        clubId: players.clubId,
+      })
+      .from(players)
+      .where(
+        or(
+          eq(players.clubId, fixture.homeClubId),
+          eq(players.clubId, fixture.awayClubId)
+        )
+      ),
+  ]);
+  const rule = buildRuleLookup(rules);
   const playerById = new Map(clubPlayers.map((p) => [p.id, p]));
 
   const bonusFor = (playerId: string): number =>
-    bonus.first === playerId
+    bonus?.first === playerId
       ? 3
-      : bonus.second === playerId
+      : bonus?.second === playerId
         ? 2
-        : bonus.third === playerId
+        : bonus?.third === playerId
           ? 1
           : 0;
 
   const rows: (typeof playerMatchStats.$inferInsert)[] = [];
-  for (const line of stats) {
+  for (const line of lines) {
     const player = playerById.get(line.playerId);
     if (!player) return fail("validation");
-    if (line.minutes <= 0) continue; // only players who actually played
+
+    const minutes = minutesPlayed(
+      {
+        started: line.started,
+        onMinute: line.onMinute,
+        offMinute: line.offMinute,
+      },
+      clock
+    );
+    // Never took the field and recorded nothing — don't store an empty row.
+    if (minutes === 0 && !line.started && line.onMinute == null) continue;
 
     const isHome = player.clubId === fixture.homeClubId;
     const conceded = isHome ? awayScore : homeScore;
     const statLine = {
-      minutes: Math.min(Math.max(line.minutes, 0), 120),
+      minutes,
       goals: Math.max(line.goals, 0),
       assists: Math.max(line.assists, 0),
       saves: Math.max(line.saves, 0),
       penaltiesSaved: Math.max(line.penaltiesSaved, 0),
       penaltiesMissed: Math.max(line.penaltiesMissed, 0),
       goalsConceded: conceded,
-      cleanSheet: conceded === 0 && line.minutes >= 60,
+      // Clean sheets only make sense once the match is over.
+      cleanSheet: Boolean(publish) && conceded === 0 && minutes >= 60,
       yellowCards: Math.max(line.yellowCards, 0),
       redCards: Math.max(line.redCards, 0),
       ownGoals: Math.max(line.ownGoals, 0),
@@ -569,6 +606,9 @@ export async function saveMatchResult(
       fixtureId,
       playerId: line.playerId,
       ...statLine,
+      started: line.started,
+      onMinute: line.started ? 0 : line.onMinute,
+      offMinute: line.offMinute,
       points: computePoints(statLine, player.position, rule),
     });
   }
@@ -578,20 +618,37 @@ export async function saveMatchResult(
       await tx
         .delete(playerMatchStats)
         .where(eq(playerMatchStats.fixtureId, fixtureId));
-      if (rows.length > 0) {
-        await tx.insert(playerMatchStats).values(rows);
-      }
+      if (rows.length > 0) await tx.insert(playerMatchStats).values(rows);
       await tx
         .update(fixtures)
-        .set({ homeScore, awayScore, status: "finished" })
+        .set({
+          homeScore,
+          awayScore,
+          status: publish ? "finished" : "live",
+        })
         .where(eq(fixtures.id, fixtureId));
     });
   } catch (err) {
-    Sentry.captureException(err);
-    console.error("saveMatchResult failed:", err);
-    return fail("unknown");
+    return dbFailure("saveMatchProgress", err);
   }
 
+  revalidateAll();
+  return ok;
+}
+
+/** Reopens a published match for corrections. */
+export async function reopenMatch(
+  fixtureId: string
+): Promise<AdminActionState> {
+  if (!(await requireAdminAction())) return fail("forbidden");
+  try {
+    await db
+      .update(fixtures)
+      .set({ status: "live" })
+      .where(eq(fixtures.id, fixtureId));
+  } catch (err) {
+    return dbFailure("reopenMatch", err);
+  }
   revalidateAll();
   return ok;
 }
