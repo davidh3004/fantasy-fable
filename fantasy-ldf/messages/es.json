@@ -357,7 +357,8 @@
       "no_team": "Todavía no tienes equipo.",
       "unknown": "Algo salió mal. Intenta de nuevo."
     },
-    "ptsLabel": "pts"
+    "ptsLabel": "pts",
+    "noLineup": "No tenías equipo en esta jornada."
   },
   "comingSoon": {
     "title": "En construcción",

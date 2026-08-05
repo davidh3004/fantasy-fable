@@ -357,7 +357,8 @@
       "no_team": "You don't have a team yet.",
       "unknown": "Something went wrong. Try again."
     },
-    "ptsLabel": "pts"
+    "ptsLabel": "pts",
+    "noLineup": "You didn't have a team for this gameweek."
   },
   "comingSoon": {
     "title": "Under construction",

@@ -4,7 +4,7 @@
  */
 
 import * as Sentry from "@sentry/nextjs";
-import { and, asc, count, eq, gt, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   fantasyTeams,
@@ -66,22 +66,17 @@ export async function runFinalizeGameweek(
     .groupBy(playerMatchStats.playerId);
   const statByPlayer = new Map(statRows.map((r) => [r.playerId, r]));
 
-  // All lineups of this gameweek with their picks + positions.
-  const pickRows = await db
+  // Every lineup of this gameweek, then its picks. Fetched separately on
+  // purpose: joining the two would drop a lineup row that has no picks, and
+  // that team would silently get no points and — worse — no roll-forward, so
+  // they'd vanish from every later gameweek.
+  const lineupRows = await db
     .select({
-      lineupId: gameweekLineups.id,
+      id: gameweekLineups.id,
       fantasyTeamId: gameweekLineups.fantasyTeamId,
       transfersCost: gameweekLineups.transfersCost,
-      pickId: lineupPicks.id,
-      playerId: lineupPicks.playerId,
-      slot: lineupPicks.slot,
-      isCaptain: lineupPicks.isCaptain,
-      isVice: lineupPicks.isVice,
-      position: players.position,
     })
     .from(gameweekLineups)
-    .innerJoin(lineupPicks, eq(lineupPicks.lineupId, gameweekLineups.id))
-    .innerJoin(players, eq(players.id, lineupPicks.playerId))
     .where(eq(gameweekLineups.gameweekId, gameweekId));
 
   const lineups = new Map<
@@ -91,19 +86,42 @@ export async function runFinalizeGameweek(
       transfersCost: number;
       picks: Array<EnginePick & { pickId: string }>;
     }
-  >();
-  for (const row of pickRows) {
-    let lineup = lineups.get(row.lineupId);
-    if (!lineup) {
-      lineup = {
+  >(
+    lineupRows.map((row) => [
+      row.id,
+      {
         fantasyTeamId: row.fantasyTeamId,
         transfersCost: row.transfersCost,
         picks: [],
-      };
-      lineups.set(row.lineupId, lineup);
-    }
+      },
+    ])
+  );
+
+  const pickRows =
+    lineupRows.length === 0
+      ? []
+      : await db
+          .select({
+            lineupId: lineupPicks.lineupId,
+            pickId: lineupPicks.id,
+            playerId: lineupPicks.playerId,
+            slot: lineupPicks.slot,
+            isCaptain: lineupPicks.isCaptain,
+            isVice: lineupPicks.isVice,
+            position: players.position,
+          })
+          .from(lineupPicks)
+          .innerJoin(players, eq(players.id, lineupPicks.playerId))
+          .where(
+            inArray(
+              lineupPicks.lineupId,
+              lineupRows.map((row) => row.id)
+            )
+          );
+
+  for (const row of pickRows) {
     const stat = statByPlayer.get(row.playerId);
-    lineup.picks.push({
+    lineups.get(row.lineupId)?.picks.push({
       pickId: row.pickId,
       playerId: row.playerId,
       slot: row.slot,
@@ -178,15 +196,18 @@ export async function runFinalizeGameweek(
                 gameweekId: nextGameweek.id,
               })
               .returning();
-            await tx.insert(lineupPicks).values(
-              lineup.picks.map((pick) => ({
-                lineupId: rolled.id,
-                playerId: pick.playerId,
-                slot: pick.slot,
-                isCaptain: pick.isCaptain,
-                isVice: pick.isVice,
-              }))
-            );
+            // Guarded: inserting an empty array throws.
+            if (lineup.picks.length > 0) {
+              await tx.insert(lineupPicks).values(
+                lineup.picks.map((pick) => ({
+                  lineupId: rolled.id,
+                  playerId: pick.playerId,
+                  slot: pick.slot,
+                  isCaptain: pick.isCaptain,
+                  isVice: pick.isVice,
+                }))
+              );
+            }
           }
         }
       }

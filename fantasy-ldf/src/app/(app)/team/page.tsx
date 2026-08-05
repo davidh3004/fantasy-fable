@@ -17,14 +17,17 @@ import {
   getGameweekPlayerPoints,
   getLineupPicks,
   getNextGameweek,
+  getSeasonGameweeks,
   getSquadPlayers,
-  getTeamLineupGameweeks,
   getUserFantasyTeam,
   toSquadSettings,
-  type TeamGameweek,
 } from "@/lib/game/queries";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
 import { effectiveFixtureStatus } from "@/lib/game/status";
+import {
+  buildViewableGameweeks,
+  pickDefaultGameweek,
+} from "@/lib/game/team-gameweeks";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -53,42 +56,18 @@ export default async function TeamPage({
   const squad = await getSquadPlayers(team.id);
   const squadSettings = toSquadSettings(settings);
 
-  // Viewable gameweeks: those with a saved lineup, plus the upcoming editable
-  // one (which may not have a lineup row yet for brand-new teams).
-  const lineupGameweeks = await getTeamLineupGameweeks(team.id);
-  const viewable: TeamGameweek[] = [...lineupGameweeks];
-  if (nextGameweek && !viewable.some((g) => g.id === nextGameweek.id)) {
-    viewable.push({
-      id: nextGameweek.id,
-      number: nextGameweek.number,
-      status: nextGameweek.status,
-      deadline: nextGameweek.deadline,
-    });
-    viewable.sort((a, b) => a.number - b.number);
-  }
-
   const now = new Date();
 
-  // Default view, in priority order:
-  //   1. the gameweek in play (deadline passed, not finalized yet)
-  //   2. the upcoming editable one
-  //   3. the most recent gameweek we have a lineup for
-  // Without (1) a live gameweek is skipped entirely the moment the next one
-  // is scheduled, which hides the squad that's actually scoring right now.
-  const liveGameweek = viewable
-    .filter((g) => g.status !== "finished" && g.deadline <= now)
-    .at(-1);
-  const upcomingGameweek = nextGameweek
-    ? viewable.find((g) => g.id === nextGameweek.id)
-    : undefined;
-  const defaultNumber =
-    liveGameweek?.number ?? upcomingGameweek?.number ?? viewable.at(-1)?.number;
+  // The range spans the season's started gameweeks, not just the ones this
+  // team has a lineup row for — otherwise everything before the team was
+  // created is unreachable and the nav arrows dead-end.
+  const seasonGameweeks = await getSeasonGameweeks(season.id);
+  const viewable = buildViewableGameweeks(seasonGameweeks, nextGameweek, now);
 
   const requested = Number(gw);
-  const selectedNumber = viewable.some((g) => g.number === requested)
-    ? requested
-    : defaultNumber;
-  const selected = viewable.find((g) => g.number === selectedNumber) ?? null;
+  const selected =
+    viewable.find((g) => g.number === requested) ??
+    pickDefaultGameweek(viewable, nextGameweek, now);
 
   // No gameweeks at all: read-only default lineup.
   if (!selected) {
@@ -171,6 +150,12 @@ export default async function TeamPage({
     }
   }
 
+  // A started gameweek with no picks means the team didn't exist yet. Say so
+  // rather than painting today's squad onto it as if it had been the lineup —
+  // the auto-built fallback below is only for a brand-new team whose upcoming
+  // lineup row hasn't been written yet.
+  const hadNoTeam = picks.length === 0 && !isEditable;
+
   // Build the lineup state for the selected gameweek.
   let lineup: LineupState;
   let captainId: string;
@@ -245,20 +230,27 @@ export default async function TeamPage({
         }
       />
 
-      <div className="mt-5">
-        <LineupEditor
-          key={selected.id}
-          players={squad}
-          settings={squadSettings}
-          initialLineup={lineup}
-          initialCaptainId={captainId}
-          initialViceId={viceId}
-          locked={!isEditable}
-          opponents={opponents}
-          pointsByPlayer={pointsByPlayer}
-          livePlayerIds={livePlayerIds}
-        />
-      </div>
+      {hadNoTeam ? (
+        <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-muted-foreground">
+          <CalendarOff className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>{t("noLineup")}</span>
+        </div>
+      ) : (
+        <div className="mt-5">
+          <LineupEditor
+            key={selected.id}
+            players={squad}
+            settings={squadSettings}
+            initialLineup={lineup}
+            initialCaptainId={captainId}
+            initialViceId={viceId}
+            locked={!isEditable}
+            opponents={opponents}
+            pointsByPlayer={pointsByPlayer}
+            livePlayerIds={livePlayerIds}
+          />
+        </div>
+      )}
     </main>
   );
 }

@@ -568,24 +568,6 @@ export async function getFixtureStats(
     .orderBy(desc(playerMatchStats.points));
 }
 
-/** Gameweeks (ordered) for which a team has a saved lineup — the views the
- *  team-page navigator can toggle between. */
-export async function getTeamLineupGameweeks(
-  fantasyTeamId: string
-): Promise<TeamGameweek[]> {
-  return db
-    .select({
-      id: gameweeks.id,
-      number: gameweeks.number,
-      status: gameweeks.status,
-      deadline: gameweeks.deadline,
-    })
-    .from(gameweekLineups)
-    .innerJoin(gameweeks, eq(gameweekLineups.gameweekId, gameweeks.id))
-    .where(eq(gameweekLineups.fantasyTeamId, fantasyTeamId))
-    .orderBy(asc(gameweeks.number));
-}
-
 /** Raw per-player points (no captain multiplier) from a gameweek's match
  *  stats — used for live points while a gameweek is in play. */
 export async function getGameweekPlayerPoints(
