@@ -13,6 +13,10 @@ import {
   getSeasonGameweeks,
   type FixtureWithClubs,
 } from "@/lib/game/queries";
+import {
+  effectiveFixtureStatus,
+  effectiveGameweekStatus,
+} from "@/lib/game/status";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -29,6 +33,7 @@ function FixtureRow({
   liveLabel: string;
 }) {
   const played = fixture.homeScore != null && fixture.awayScore != null;
+  const isLive = effectiveFixtureStatus(fixture) === "live";
   return (
     <li>
       <Link
@@ -57,8 +62,8 @@ function FixtureRow({
               {formatKickoff(fixture.kickoff, locale)}
             </span>
           )}
-          {fixture.status === "live" && (
-            <span className="mt-0.5 text-[10px] font-semibold uppercase text-cta">
+          {isLive && (
+            <span className="mt-0.5 rounded bg-destructive px-1.5 text-[10px] font-semibold uppercase text-white">
               {liveLabel}
             </span>
           )}
@@ -135,10 +140,11 @@ export default async function MatchesPage({
   const prev = index > 0 ? gameweeks[index - 1].number : null;
   const next = index < gameweeks.length - 1 ? gameweeks[index + 1].number : null;
 
+  const gameweekStatus = effectiveGameweekStatus(selected, now);
   const statusLabel =
-    selected.status === "finished"
+    gameweekStatus === "finished"
       ? tTeam("finished")
-      : selected.deadline <= now
+      : gameweekStatus === "locked"
         ? tTeam("live")
         : tTeam("upcoming");
 

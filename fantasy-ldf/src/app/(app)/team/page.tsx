@@ -24,6 +24,7 @@ import {
   type TeamGameweek,
 } from "@/lib/game/queries";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
+import { effectiveFixtureStatus } from "@/lib/game/status";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -137,11 +138,14 @@ export default async function TeamPage({
   for (const fixture of gameweekFixtures) {
     opponents[fixture.homeClubId] = { opp: fixture.awayShort, home: true };
     opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
-    if (fixture.status === "live" || fixture.status === "finished") {
+    // Derived, so a match that has kicked off counts as live even if nobody
+    // moved its status in the admin panel.
+    const status = effectiveFixtureStatus(fixture, now);
+    if (status === "live" || status === "finished") {
       liveClubs.add(fixture.homeClubId);
       liveClubs.add(fixture.awayClubId);
     }
-    if (fixture.status === "live") {
+    if (status === "live") {
       playingClubs.add(fixture.homeClubId);
       playingClubs.add(fixture.awayClubId);
     }

@@ -13,6 +13,7 @@ import {
   getFixtureStats,
   type FixtureStatRow,
 } from "@/lib/game/queries";
+import { effectiveFixtureStatus } from "@/lib/game/status";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -44,10 +45,11 @@ export default async function MatchDetailPage({
   const homeStats = stats.filter((s) => s.clubId === fixture.homeClubId);
   const awayStats = stats.filter((s) => s.clubId === fixture.awayClubId);
 
+  const fixtureStatus = effectiveFixtureStatus(fixture);
   const statusLabel =
-    fixture.status === "finished"
+    fixtureStatus === "finished"
       ? tTeam("finished")
-      : fixture.status === "live"
+      : fixtureStatus === "live"
         ? tTeam("live")
         : tTeam("upcoming");
 

@@ -405,7 +405,8 @@
         "not_locked": "The gameweek hasn't closed yet. Wait for the deadline.",
         "fixtures_pending": "Some fixtures are missing results. Enter them all first.",
         "already_finished": "The gameweek was already finalized.",
-        "unknown": "Something went wrong. Try again."
+        "unknown": "Something went wrong. Try again.",
+        "gameweek_finished": "The gameweek is already finalized and can't be deleted."
       }
     },
     "scoring": {
@@ -489,7 +490,9 @@
       "home": "Home",
       "away": "Away",
       "kickoff": "Kickoff",
-      "finished": "FT"
+      "finished": "FT",
+      "deleteCascade": "This also removes the saved lineups, transfers and chips for this gameweek.",
+      "deleteFinished": "This gameweek is already finalized — its points are counted in the standings and it can't be deleted."
     },
     "results": {
       "intro": "Pick a fixture to enter the result and player stats.",

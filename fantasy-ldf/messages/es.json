@@ -405,7 +405,8 @@
         "not_locked": "La jornada aún no cierra. Espera a que pase la fecha límite.",
         "fixtures_pending": "Faltan partidos por registrar. Completa todos los resultados primero.",
         "already_finished": "La jornada ya fue finalizada.",
-        "unknown": "Algo salió mal. Intenta de nuevo."
+        "unknown": "Algo salió mal. Intenta de nuevo.",
+        "gameweek_finished": "La jornada ya fue finalizada y no se puede eliminar."
       }
     },
     "scoring": {
@@ -489,7 +490,9 @@
       "home": "Local",
       "away": "Visitante",
       "kickoff": "Inicio del partido",
-      "finished": "Final"
+      "finished": "Final",
+      "deleteCascade": "También se eliminarán las alineaciones, fichajes y chips guardados de esta jornada.",
+      "deleteFinished": "Esta jornada ya fue finalizada — sus puntos cuentan en la clasificación y no se puede eliminar."
     },
     "results": {
       "intro": "Elige un partido para registrar el resultado y las estadísticas de los jugadores.",

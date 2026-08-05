@@ -43,6 +43,8 @@ export async function runFinalizeGameweek(
   if (gameweek.status === "finished") return { error: "already_finished" };
   if (gameweek.deadline > new Date()) return { error: "not_locked" };
 
+  // Every fixture must have a published result — a live or scheduled one means
+  // stats are still missing, and finalizing would bank incomplete points.
   const [pendingFixtures] = await db
     .select({ n: count() })
     .from(fixtures)

@@ -2,12 +2,14 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
-import { and, count, eq, or } from "drizzle-orm";
+import { and, count, eq, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  chipPlays,
   clubs,
   fixtures,
   gameSettings,
+  gameweekLineups,
   gameweeks,
   lineupPicks,
   playerMatchStats,
@@ -27,6 +29,19 @@ export type AdminActionState = { error?: string; success?: boolean };
 
 const ok: AdminActionState = { success: true };
 const fail = (error: string): AdminActionState => ({ error });
+
+/**
+ * Turns a database error into a friendly action result instead of letting it
+ * escape the server action, which renders the generic "page couldn't load"
+ * screen. 23503 = foreign key violation (rows elsewhere still point at this).
+ */
+function dbFailure(context: string, err: unknown): AdminActionState {
+  const code = (err as { code?: string }).code;
+  if (code === "23503") return fail("in_use");
+  Sentry.captureException(err, { tags: { area: "admin-action", context } });
+  console.error(`${context} failed:`, err);
+  return fail("unknown");
+}
 
 function str(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
@@ -112,7 +127,11 @@ export async function deleteClub(id: string): Promise<AdminActionState> {
     .where(or(eq(fixtures.homeClubId, id), eq(fixtures.awayClubId, id)));
   if (playerCount.n > 0 || fixtureCount.n > 0) return fail("in_use");
 
-  await db.delete(clubs).where(eq(clubs.id, id));
+  try {
+    await db.delete(clubs).where(eq(clubs.id, id));
+  } catch (err) {
+    return dbFailure("deleteClub", err);
+  }
   revalidateAll();
   return ok;
 }
@@ -207,7 +226,11 @@ export async function deletePlayer(id: string): Promise<AdminActionState> {
     return fail("in_use");
   }
 
-  await db.delete(players).where(eq(players.id, id));
+  try {
+    await db.delete(players).where(eq(players.id, id));
+  } catch (err) {
+    return dbFailure("deletePlayer", err);
+  }
   revalidateAll();
   return ok;
 }
@@ -287,16 +310,94 @@ export async function recomputeDeadline(
   return ok;
 }
 
-export async function deleteGameweek(id: string): Promise<AdminActionState> {
+/** What a gameweek would take with it — drives the confirm dialog copy. */
+export type GameweekUsage = {
+  fixtures: number;
+  lineups: number;
+  transfers: number;
+  chips: number;
+  finished: boolean;
+};
+
+export async function getGameweekUsage(id: string): Promise<GameweekUsage> {
+  const [gameweek, fx, lineups, tf, chips] = await Promise.all([
+    db
+      .select({ status: gameweeks.status })
+      .from(gameweeks)
+      .where(eq(gameweeks.id, id))
+      .limit(1),
+    db.select({ n: count() }).from(fixtures).where(eq(fixtures.gameweekId, id)),
+    db
+      .select({ n: count() })
+      .from(gameweekLineups)
+      .where(eq(gameweekLineups.gameweekId, id)),
+    db
+      .select({ n: count() })
+      .from(transfers)
+      .where(eq(transfers.gameweekId, id)),
+    db
+      .select({ n: count() })
+      .from(chipPlays)
+      .where(eq(chipPlays.gameweekId, id)),
+  ]);
+
+  return {
+    fixtures: fx[0]?.n ?? 0,
+    lineups: lineups[0]?.n ?? 0,
+    transfers: tf[0]?.n ?? 0,
+    chips: chips[0]?.n ?? 0,
+    finished: gameweek[0]?.status === "finished",
+  };
+}
+
+/**
+ * Deletes a gameweek. Four tables reference gameweeks and none of them cascade,
+ * so the dependants have to go first or Postgres raises a foreign-key error.
+ *
+ * `cascade` also removes this gameweek's lineups, transfers and chip plays —
+ * needed because every team gets a lineup row at onboarding, which would
+ * otherwise make a mistakenly-created gameweek undeletable forever. Refused
+ * once the gameweek is finished: its points are already banked in
+ * fantasy_teams.totalPoints and removing it would silently corrupt totals.
+ */
+export async function deleteGameweek(
+  id: string,
+  cascade = false
+): Promise<AdminActionState> {
   if (!(await requireAdminAction())) return fail("forbidden");
 
-  const [fixtureCount] = await db
-    .select({ n: count() })
-    .from(fixtures)
-    .where(eq(fixtures.gameweekId, id));
-  if (fixtureCount.n > 0) return fail("in_use");
+  const usage = await getGameweekUsage(id);
+  if (usage.finished) return fail("gameweek_finished");
+  if (usage.fixtures > 0) return fail("in_use");
 
-  await db.delete(gameweeks).where(eq(gameweeks.id, id));
+  const hasDependants =
+    usage.lineups > 0 || usage.transfers > 0 || usage.chips > 0;
+  if (hasDependants && !cascade) return fail("in_use");
+
+  try {
+    await db.transaction(async (tx) => {
+      if (cascade) {
+        await tx.delete(lineupPicks).where(
+          inArray(
+            lineupPicks.lineupId,
+            tx
+              .select({ id: gameweekLineups.id })
+              .from(gameweekLineups)
+              .where(eq(gameweekLineups.gameweekId, id))
+          )
+        );
+        await tx
+          .delete(gameweekLineups)
+          .where(eq(gameweekLineups.gameweekId, id));
+        await tx.delete(transfers).where(eq(transfers.gameweekId, id));
+        await tx.delete(chipPlays).where(eq(chipPlays.gameweekId, id));
+      }
+      await tx.delete(gameweeks).where(eq(gameweeks.id, id));
+    });
+  } catch (err) {
+    return dbFailure("deleteGameweek", err);
+  }
+
   revalidateAll();
   return ok;
 }
@@ -349,7 +450,11 @@ export async function deleteFixture(id: string): Promise<AdminActionState> {
     .where(eq(playerMatchStats.fixtureId, id));
   if (statCount.n > 0) return fail("in_use");
 
-  await db.delete(fixtures).where(eq(fixtures.id, id));
+  try {
+    await db.delete(fixtures).where(eq(fixtures.id, id));
+  } catch (err) {
+    return dbFailure("deleteFixture", err);
+  }
   revalidateAll();
   return ok;
 }

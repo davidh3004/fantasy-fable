@@ -18,6 +18,7 @@ import {
   toSquadSettings,
   type ManagerPick,
 } from "@/lib/game/queries";
+import { effectiveFixtureStatus } from "@/lib/game/status";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("manager");
@@ -109,7 +110,8 @@ export default async function ManagerTeamPage({
   for (const fixture of gameweekFixtures) {
     opponents[fixture.homeClubId] = { opp: fixture.awayShort, home: true };
     opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
-    if (fixture.status === "live" || fixture.status === "finished") {
+    const status = effectiveFixtureStatus(fixture);
+    if (status === "live" || status === "finished") {
       liveClubs.add(fixture.homeClubId);
       liveClubs.add(fixture.awayClubId);
     }

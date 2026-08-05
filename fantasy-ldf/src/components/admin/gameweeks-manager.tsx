@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { effectiveGameweekStatus } from "@/lib/game/status";
 import { cn } from "@/lib/utils";
 import { toAstInputValue } from "@/lib/game/format";
 import {
@@ -166,13 +167,15 @@ export function GameweeksManager({
               <h2 className="font-heading text-lg">
                 {t("gameweek", { number: gw.number })}
               </h2>
+              {/* Derived, so it matches what players actually see even if the
+                  stored status was never moved. */}
               <span
                 className={cn(
                   "rounded-md px-2 py-0.5 text-xs font-medium",
-                  STATUS_BADGE[gw.status]
+                  STATUS_BADGE[effectiveGameweekStatus(gw)]
                 )}
               >
-                {t(`status.${gw.status}`)}
+                {t(`status.${effectiveGameweekStatus(gw)}`)}
               </span>
               <span className="flex items-center gap-1.5 text-xs capitalize text-muted-foreground">
                 <CalendarClock className="size-3.5" aria-hidden />
@@ -246,9 +249,17 @@ export function GameweeksManager({
                   title={tCommon("confirmDelete", {
                     name: t("gameweek", { number: gw.number }),
                   })}
+                  description={
+                    gw.status === "finished"
+                      ? t("deleteFinished")
+                      : t("deleteCascade")
+                  }
                   confirmLabel={tCommon("delete")}
                   cancelLabel={tGlobal("cancel")}
-                  onConfirm={() => runAction(() => deleteGameweek(gw.id))}
+                  // Cascade clears this gameweek's lineups/transfers/chips —
+                  // without it a gameweek anyone has onboarded into can never
+                  // be removed. The action still refuses once it's finished.
+                  onConfirm={() => runAction(() => deleteGameweek(gw.id, true))}
                 />
               </span>
             </div>
