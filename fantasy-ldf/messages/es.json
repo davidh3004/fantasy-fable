@@ -216,7 +216,8 @@
       "blocked": {
         "budget": "Sin banco",
         "club": "Límite club"
-      }
+      },
+      "info": "Información de {name}"
     },
     "review": {
       "title": "Revisar fichajes",
@@ -258,7 +259,8 @@
     "title": "Equipo del rival",
     "back": "Volver",
     "hidden": "Este equipo estará visible cuando comience la primera jornada.",
-    "noLineup": "Este equipo no tenía alineación en esa jornada."
+    "noLineup": "Este equipo no tenía alineación en esa jornada.",
+    "gameweekPoints": "{points} pts jornada"
   },
   "leagues": {
     "title": "Ligas",
@@ -358,7 +360,23 @@
       "unknown": "Algo salió mal. Intenta de nuevo."
     },
     "ptsLabel": "pts",
-    "noLineup": "No tenías equipo en esta jornada."
+    "noLineup": "No tenías equipo en esta jornada.",
+    "breakdown": {
+      "title": "Cómo sumó los puntos",
+      "minutes": "Minutos jugados",
+      "goals": "Goles",
+      "assists": "Asistencias",
+      "cleanSheet": "Portería a cero",
+      "saves": "Atajadas",
+      "penaltiesSaved": "Penales atajados",
+      "penaltiesMissed": "Penales fallados",
+      "goalsConceded": "Goles recibidos",
+      "yellowCards": "Tarjetas amarillas",
+      "redCards": "Tarjetas rojas",
+      "ownGoals": "Autogoles",
+      "bonus": "Bonus",
+      "didNotPlay": "No ha jugado en esta jornada."
+    }
   },
   "comingSoon": {
     "title": "En construcción",
@@ -407,7 +425,9 @@
         "fixtures_pending": "Faltan partidos por registrar. Completa todos los resultados primero.",
         "already_finished": "La jornada ya fue finalizada.",
         "unknown": "Algo salió mal. Intenta de nuevo.",
-        "gameweek_finished": "La jornada ya fue finalizada y no se puede eliminar."
+        "gameweek_finished": "La jornada ya fue finalizada y no se puede eliminar.",
+        "not_finished": "La jornada no está finalizada, no hay nada que deshacer.",
+        "later_finalized": "Deshaz primero las jornadas finalizadas posteriores — hacerlo fuera de orden corrompería los totales."
       }
     },
     "scoring": {
@@ -493,7 +513,11 @@
       "kickoff": "Inicio del partido",
       "finished": "Final",
       "deleteCascade": "También se eliminarán las alineaciones, fichajes y chips guardados de esta jornada.",
-      "deleteFinished": "Esta jornada ya fue finalizada — sus puntos cuentan en la clasificación y no se puede eliminar."
+      "deleteFinished": "Esta jornada ya fue finalizada — sus puntos cuentan en la clasificación y no se puede eliminar.",
+      "unfinalize": "Deshacer finalización",
+      "unfinalizeShort": "Deshacer",
+      "unfinalizeConfirmTitle": "¿Deshacer la finalización de la jornada {number}?",
+      "unfinalizeConfirmBody": "Los puntos se restan del total de cada equipo, se borran las instantáneas por jugador y se recalculan los rankings, para que puedas corregir resultados y finalizar de nuevo. Las alineaciones ya trasladadas a la siguiente jornada se conservan. Cada equipo también devuelve un fichaje gratis — un equipo que ya estaba en el tope pierde uno que nunca ganó."
     },
     "results": {
       "intro": "Elige un partido para registrar el resultado y las estadísticas de los jugadores.",

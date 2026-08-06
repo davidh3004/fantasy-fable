@@ -216,7 +216,8 @@
       "blocked": {
         "budget": "No funds",
         "club": "Club limit"
-      }
+      },
+      "info": "Player info for {name}"
     },
     "review": {
       "title": "Review transfers",
@@ -258,7 +259,8 @@
     "title": "Rival's team",
     "back": "Back",
     "hidden": "This team becomes visible once the first gameweek starts.",
-    "noLineup": "This team had no lineup for that gameweek."
+    "noLineup": "This team had no lineup for that gameweek.",
+    "gameweekPoints": "GW {points} pts"
   },
   "leagues": {
     "title": "Leagues",
@@ -358,7 +360,23 @@
       "unknown": "Something went wrong. Try again."
     },
     "ptsLabel": "pts",
-    "noLineup": "You didn't have a team for this gameweek."
+    "noLineup": "You didn't have a team for this gameweek.",
+    "breakdown": {
+      "title": "How the points were earned",
+      "minutes": "Minutes played",
+      "goals": "Goals",
+      "assists": "Assists",
+      "cleanSheet": "Clean sheet",
+      "saves": "Saves",
+      "penaltiesSaved": "Penalties saved",
+      "penaltiesMissed": "Penalties missed",
+      "goalsConceded": "Goals conceded",
+      "yellowCards": "Yellow cards",
+      "redCards": "Red cards",
+      "ownGoals": "Own goals",
+      "bonus": "Bonus",
+      "didNotPlay": "Hasn't played in this gameweek."
+    }
   },
   "comingSoon": {
     "title": "Under construction",
@@ -407,7 +425,9 @@
         "fixtures_pending": "Some fixtures are missing results. Enter them all first.",
         "already_finished": "The gameweek was already finalized.",
         "unknown": "Something went wrong. Try again.",
-        "gameweek_finished": "The gameweek is already finalized and can't be deleted."
+        "gameweek_finished": "The gameweek is already finalized and can't be deleted.",
+        "not_finished": "The gameweek isn't finalized, so there's nothing to undo.",
+        "later_finalized": "Undo the later finalized gameweeks first — unwinding out of order would corrupt the totals."
       }
     },
     "scoring": {
@@ -493,7 +513,11 @@
       "kickoff": "Kickoff",
       "finished": "FT",
       "deleteCascade": "This also removes the saved lineups, transfers and chips for this gameweek.",
-      "deleteFinished": "This gameweek is already finalized — its points are counted in the standings and it can't be deleted."
+      "deleteFinished": "This gameweek is already finalized — its points are counted in the standings and it can't be deleted.",
+      "unfinalize": "Undo finalize",
+      "unfinalizeShort": "Undo",
+      "unfinalizeConfirmTitle": "Undo finalize for gameweek {number}?",
+      "unfinalizeConfirmBody": "Points are taken back off every team's total, the per-player snapshots are cleared and ranks recalculated, so you can fix results and finalize again. Lineups already rolled forward to the next gameweek are kept. Each team also gives back one free transfer — a team already at the cap loses one it never gained."
     },
     "results": {
       "intro": "Pick a fixture to enter the result and player stats.",

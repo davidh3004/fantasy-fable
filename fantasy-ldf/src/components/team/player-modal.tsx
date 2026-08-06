@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ClubBadge } from "@/components/pitch/player-chip";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
+import type { BreakdownRow } from "@/lib/game/scoring";
 import type { MarketPlayer } from "@/lib/game/queries";
 
 const STATUS_DOT: Record<MarketPlayer["status"], string> = {
@@ -20,6 +21,9 @@ const STATUS_DOT: Record<MarketPlayer["status"], string> = {
   suspended: "bg-yellow-400",
   unavailable: "bg-slate-400",
 };
+
+/** Categories whose count reads better as a bare number than a "×n". */
+const MEASURED = new Set(["minutes", "saves", "goalsConceded"]);
 
 type PlayerModalProps = {
   player: MarketPlayer | null;
@@ -30,9 +34,18 @@ type PlayerModalProps = {
   isVice: boolean;
   /** Sub-line shown in specs: next fixture or points. */
   fixtureLabel?: string;
-  onSwitch: () => void;
-  onMakeCaptain: () => void;
-  onMakeVice: () => void;
+  /**
+   * Lineup actions are only meaningful before the deadline. When false the
+   * whole action block is dropped and this is a read-only stats sheet.
+   */
+  canEdit?: boolean;
+  /** How this player earned their points in the gameweek being viewed. */
+  breakdown?: BreakdownRow[];
+  /** Total for the gameweek. Null when nothing has been played yet. */
+  totalPoints?: number | null;
+  onSwitch?: () => void;
+  onMakeCaptain?: () => void;
+  onMakeVice?: () => void;
 };
 
 export function PlayerModal({
@@ -43,6 +56,9 @@ export function PlayerModal({
   isCaptain,
   isVice,
   fixtureLabel,
+  canEdit = true,
+  breakdown,
+  totalPoints,
   onSwitch,
   onMakeCaptain,
   onMakeVice,
@@ -56,17 +72,20 @@ export function PlayerModal({
     { key: "position", value: tPos(player.position) },
     { key: "club", value: player.clubName },
     { key: "price", value: formatMoney(player.price) },
-    ...(fixtureLabel
-      ? [{ key: "nextFixture", value: fixtureLabel }]
-      : []),
+    ...(fixtureLabel ? [{ key: "nextFixture", value: fixtureLabel }] : []),
   ];
+
+  // Only meaningful once a gameweek is under way — before that there's nothing
+  // to explain, and an empty "didn't play" would be misleading.
+  const hasPlayed = (breakdown?.length ?? 0) > 0;
+  const showStats = breakdown != null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Bottom sheet: anchored to the bottom edge, slides up on open */}
       <DialogContent
         className={cn(
-          "top-auto bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 translate-y-0 p-0 sm:max-w-md",
+          "top-auto bottom-0 left-1/2 flex max-h-[90dvh] w-full max-w-md -translate-x-1/2 translate-y-0 flex-col overflow-y-auto p-0 sm:max-w-md",
           "rounded-t-2xl rounded-b-none pb-[env(safe-area-inset-bottom)]",
           "duration-300 data-closed:duration-200",
           "data-open:zoom-in-100 data-closed:zoom-out-100",
@@ -81,7 +100,7 @@ export function PlayerModal({
         />
         {/* Hero: photo over club color */}
         <div
-          className="relative flex h-36 items-end justify-center overflow-hidden rounded-t-2xl"
+          className="relative flex h-36 shrink-0 items-end justify-center overflow-hidden rounded-t-2xl"
           style={{
             background: `linear-gradient(180deg, ${player.clubColor ?? "#7c3aed"} 0%, #181830 130%)`,
           }}
@@ -121,6 +140,17 @@ export function PlayerModal({
               {isCaptain ? "C" : "V"}
             </span>
           )}
+          {/* Gameweek total, anchored opposite the badge */}
+          {totalPoints != null && (
+            <span className="absolute right-2 bottom-2 rounded-lg bg-black/45 px-2.5 py-1 text-right backdrop-blur">
+              <span className="block font-heading text-xl leading-none tabular-nums text-white">
+                {totalPoints}
+              </span>
+              <span className="block text-[9px] uppercase tracking-wider text-white/70">
+                {t("ptsLabel")}
+              </span>
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-4 p-4 pt-0">
@@ -154,49 +184,91 @@ export function PlayerModal({
             ))}
           </dl>
 
-          {/* Actions */}
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              onClick={onSwitch}
-              className="h-11 w-full cursor-pointer font-semibold"
-            >
-              <ArrowLeftRight className="size-4" aria-hidden />
-              {t("actions.switch")}
-            </Button>
-            <div className="grid grid-cols-2 gap-2">
+          {/* How the points were earned */}
+          {showStats && (
+            <section>
+              <h3 className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                {t("breakdown.title")}
+              </h3>
+              {hasPlayed ? (
+                <ul className="overflow-hidden rounded-lg border border-border">
+                  {breakdown!.map((row) => (
+                    <li
+                      key={row.key}
+                      className="flex items-center gap-3 border-b border-border/50 bg-card px-3 py-2 text-sm last:border-0"
+                    >
+                      <span className="min-w-0 flex-1 truncate">
+                        {t(`breakdown.${row.key}`)}
+                      </span>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {MEASURED.has(row.key) ? row.count : `×${row.count}`}
+                      </span>
+                      <span
+                        className={cn(
+                          "w-9 shrink-0 text-right font-heading tabular-nums",
+                          row.points > 0 && "text-emerald-400",
+                          row.points < 0 && "text-destructive"
+                        )}
+                      >
+                        {row.points > 0 ? `+${row.points}` : row.points}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                  <Clock className="size-4 shrink-0" aria-hidden />
+                  {t("breakdown.didNotPlay")}
+                </p>
+              )}
+            </section>
+          )}
+
+          {/* Actions — only before the deadline */}
+          {canEdit && (
+            <div className="flex flex-col gap-2">
               <Button
                 type="button"
-                variant="secondary"
-                disabled={!isStarter || isCaptain}
-                onClick={onMakeCaptain}
-                className="h-11 cursor-pointer"
+                onClick={onSwitch}
+                className="h-11 w-full cursor-pointer font-semibold"
               >
-                <span
-                  className="flex size-4.5 items-center justify-center rounded-full bg-yellow-400 text-[9px] font-bold text-yellow-950"
-                  aria-hidden
-                >
-                  C
-                </span>
-                {t("actions.captain")}
+                <ArrowLeftRight className="size-4" aria-hidden />
+                {t("actions.switch")}
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!isStarter || isVice}
-                onClick={onMakeVice}
-                className="h-11 cursor-pointer"
-              >
-                <span
-                  className="flex size-4.5 items-center justify-center rounded-full bg-slate-200 text-[9px] font-bold text-slate-800"
-                  aria-hidden
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!isStarter || isCaptain}
+                  onClick={onMakeCaptain}
+                  className="h-11 cursor-pointer"
                 >
-                  V
-                </span>
-                {t("actions.vice")}
-              </Button>
+                  <span
+                    className="flex size-4.5 items-center justify-center rounded-full bg-yellow-400 text-[9px] font-bold text-yellow-950"
+                    aria-hidden
+                  >
+                    C
+                  </span>
+                  {t("actions.captain")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!isStarter || isVice}
+                  onClick={onMakeVice}
+                  className="h-11 cursor-pointer"
+                >
+                  <span
+                    className="flex size-4.5 items-center justify-center rounded-full bg-slate-200 text-[9px] font-bold text-slate-800"
+                    aria-hidden
+                  >
+                    V
+                  </span>
+                  {t("actions.vice")}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -1,13 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Info, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomSheetContent } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { ClubBadge } from "@/components/pitch/player-chip";
 import { cn } from "@/lib/utils";
+import { PlayerModal } from "@/components/team/player-modal";
+import {
+  buildRuleLookup,
+  explainPoints,
+  type ScoringRuleRow,
+  type StatLine,
+} from "@/lib/game/scoring";
 import { formatMoney } from "@/lib/game/format";
 import type { MarketPlayer } from "@/lib/game/queries";
 import type { Position } from "@/lib/game/squad";
@@ -28,6 +35,11 @@ export type MarketCandidate = {
 type SortKey = "price_desc" | "price_asc" | "name";
 
 type MarketSheetProps = {
+  /** playerId → gameweek stat line, for the info modal's breakdown. */
+  statLines?: Record<string, StatLine>;
+  rules?: ScoringRuleRow[];
+  /** playerId → gameweek points, shown in the modal header. */
+  pointsByPlayer?: Record<string, number>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   position: Position | null;
@@ -52,10 +64,28 @@ export function MarketSheet({
   candidates,
   fixtureLabel,
   onPick,
+  statLines,
+  rules,
+  pointsByPlayer,
 }: MarketSheetProps) {
   const t = useTranslations("transfers.market");
   const tPos = useTranslations("positions");
   const [search, setSearch] = useState("");
+  const [infoId, setInfoId] = useState<string | null>(null);
+
+  const rule = useMemo(
+    () => (rules ? buildRuleLookup(rules) : null),
+    [rules]
+  );
+  const infoPlayer = infoId
+    ? (candidates.find((c) => c.player.id === infoId)?.player ?? null)
+    : null;
+
+  function breakdownFor(player: MarketPlayer) {
+    if (!rule || !statLines) return undefined;
+    const stats = statLines[player.id];
+    return stats ? explainPoints(stats, player.position, rule) : [];
+  }
   const [clubId, setClubId] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("price_desc");
   const [onlyAffordable, setOnlyAffordable] = useState(false);
@@ -194,13 +224,13 @@ export function MarketSheet({
 
         <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto px-4 pb-4">
           {visible.map(({ player, block }) => (
-            <li key={player.id}>
+            <li key={player.id} className="relative">
               <button
                 type="button"
                 disabled={block !== null}
                 onClick={() => onPick(player.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors",
+                  "flex w-full items-center gap-3 rounded-xl border border-border bg-card py-2.5 pr-11 pl-3 text-left transition-colors",
                   block === null
                     ? "cursor-pointer hover:border-primary/50"
                     : "cursor-not-allowed opacity-40"
@@ -225,6 +255,18 @@ export function MarketSheet({
                   {formatMoney(player.price)}
                 </span>
               </button>
+              {/* Separate from the row so inspecting a player never picks
+                  them — and it stays reachable when the pick is blocked. */}
+              <button
+                type="button"
+                onClick={() => setInfoId(player.id)}
+                aria-label={t("info", {
+                  name: `${player.firstName} ${player.lastName}`,
+                })}
+                className="absolute top-1/2 right-1 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <Info className="size-4" aria-hidden />
+              </button>
             </li>
           ))}
           {visible.length === 0 && (
@@ -234,6 +276,23 @@ export function MarketSheet({
           )}
         </ul>
       </BottomSheetContent>
+
+      <PlayerModal
+        player={infoPlayer}
+        open={infoPlayer != null}
+        onOpenChange={(next) => {
+          if (!next) setInfoId(null);
+        }}
+        isStarter={false}
+        isCaptain={false}
+        isVice={false}
+        fixtureLabel={infoPlayer ? fixtureLabel(infoPlayer) : undefined}
+        canEdit={false}
+        breakdown={infoPlayer ? breakdownFor(infoPlayer) : undefined}
+        totalPoints={
+          infoPlayer ? (pointsByPlayer?.[infoPlayer.id] ?? null) : null
+        }
+      />
     </Dialog>
   );
 }

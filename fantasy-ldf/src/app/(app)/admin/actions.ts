@@ -18,7 +18,10 @@ import {
   squadPicks,
   transfers,
 } from "@/db/schema";
-import { runFinalizeGameweek } from "@/lib/game/finalize";
+import {
+  runFinalizeGameweek,
+  runUnfinalizeGameweek,
+} from "@/lib/game/finalize";
 import { requireAdminAction } from "@/lib/admin";
 import { pickedFile, uploadImage } from "@/lib/storage";
 import { buildRuleLookup, computePoints } from "@/lib/game/scoring";
@@ -663,6 +666,19 @@ export async function finalizeGameweek(
   if (!(await requireAdminAction())) return fail("forbidden");
 
   const result = await runFinalizeGameweek(gameweekId);
+  if (result.error) return fail(result.error);
+
+  revalidateAll();
+  return ok;
+}
+
+/** Reverses a finalize so a wrong result can be corrected and re-run. */
+export async function unfinalizeGameweek(
+  gameweekId: string
+): Promise<AdminActionState> {
+  if (!(await requireAdminAction())) return fail("forbidden");
+
+  const result = await runUnfinalizeGameweek(gameweekId);
   if (result.error) return fail(result.error);
 
   revalidateAll();

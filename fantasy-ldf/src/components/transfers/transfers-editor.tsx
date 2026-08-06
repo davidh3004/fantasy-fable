@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PitchView } from "@/components/pitch/pitch-view";
 import { PlayerChip, ClubBadge } from "@/components/pitch/player-chip";
 import { MarketSheet, type MarketCandidate } from "./market-sheet";
+import type { ScoringRuleRow, StatLine } from "@/lib/game/scoring";
 import { ReviewSheet } from "./review-sheet";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
@@ -42,6 +43,10 @@ type TransfersEditorProps = {
   preSeason: boolean;
   locked: boolean;
   opponents: Record<string, OpponentInfo>;
+  /** Last played gameweek's stats, for the market info modal. */
+  statLines?: Record<string, StatLine>;
+  rules?: ScoringRuleRow[];
+  pointsByPlayer?: Record<string, number>;
 };
 
 export function TransfersEditor({
@@ -54,6 +59,9 @@ export function TransfersEditor({
   preSeason,
   locked,
   opponents,
+  statLines,
+  rules,
+  pointsByPlayer,
 }: TransfersEditorProps) {
   const t = useTranslations("transfers");
   const tTeam = useTranslations("team");
@@ -326,6 +334,9 @@ export function TransfersEditor({
         candidates={candidates}
         fixtureLabel={fixtureLabel}
         onPick={handlePick}
+        statLines={statLines}
+        rules={rules}
+        pointsByPlayer={pointsByPlayer}
       />
 
       <ReviewSheet

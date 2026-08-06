@@ -19,6 +19,11 @@ import {
   type ManagerPick,
 } from "@/lib/game/queries";
 import { effectiveFixtureStatus } from "@/lib/game/status";
+import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
+import { getGameweekStatLines } from "@/lib/game/queries";
+import { db } from "@/db";
+import { scoringRules } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("manager");
@@ -54,6 +59,13 @@ export default async function ManagerTeamPage({
 
   const startedGameweek = await getLatestStartedGameweek(season.id);
 
+  // What this manager scored in the gameweek on show — the header only had
+  // their season total, which says nothing about how they're doing right now.
+  const squadSettings = toSquadSettings(settings);
+  const gameweekPoints = startedGameweek
+    ? await getTeamGameweekPoints(teamId, startedGameweek, squadSettings)
+    : null;
+
   const Header = (
     <>
       <Link
@@ -69,6 +81,14 @@ export default async function ManagerTeamPage({
           {team.managerName}
           {" · "}
           {tTeam("points", { points: team.totalPoints })}
+          {gameweekPoints != null && (
+            <>
+              {" · "}
+              <span className="text-foreground">
+                {t("gameweekPoints", { points: gameweekPoints })}
+              </span>
+            </>
+          )}
         </p>
       </div>
     </>
@@ -117,7 +137,6 @@ export default async function ManagerTeamPage({
     }
   }
 
-  const squadSettings = toSquadSettings(settings);
   const captainId = picks.find((p) => p.isCaptain)?.id ?? "";
   const viceId = picks.find((p) => p.isVice)?.id ?? "";
 
@@ -176,6 +195,24 @@ export default async function ManagerTeamPage({
     }
   }
 
+  const [statLineMap, ruleRows] = await Promise.all([
+    getGameweekStatLines(startedGameweek.id),
+    db
+      .select({
+        eventKey: scoringRules.eventKey,
+        position: scoringRules.position,
+        points: scoringRules.points,
+      })
+      .from(scoringRules)
+      .where(eq(scoringRules.seasonId, season.id)),
+  ]);
+  const statLines = Object.fromEntries(
+    picks.flatMap((pick) => {
+      const line = statLineMap.get(pick.id);
+      return line ? [[pick.id, line] as const] : [];
+    })
+  );
+
   const statusLabel = isFinalized ? tTeam("finished") : tTeam("live");
 
   return (
@@ -198,6 +235,8 @@ export default async function ManagerTeamPage({
         viceId={viceId}
         opponents={opponents}
         pointsByPlayer={pointsByPlayer}
+        statLines={statLines}
+        rules={ruleRows}
       />
     </main>
   );

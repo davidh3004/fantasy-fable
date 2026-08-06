@@ -1,12 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PitchView } from "@/components/pitch/pitch-view";
 import { PlayerChip } from "@/components/pitch/player-chip";
 import { POSITION_ORDER, type Position } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
 import type { OpponentInfo } from "@/components/team/lineup-editor";
+import { PlayerModal } from "@/components/team/player-modal";
+import {
+  buildRuleLookup,
+  explainPoints,
+  type ScoringRuleRow,
+  type StatLine,
+} from "@/lib/game/scoring";
 
 type ReadonlyPitchProps = {
   players: MarketPlayer[];
@@ -16,6 +23,9 @@ type ReadonlyPitchProps = {
   viceId: string;
   opponents: Record<string, OpponentInfo>;
   pointsByPlayer: Record<string, number>;
+  /** playerId → gameweek stat line, for the modal's points breakdown. */
+  statLines?: Record<string, StatLine>;
+  rules?: ScoringRuleRow[];
 };
 
 export function ReadonlyPitch({
@@ -26,14 +36,32 @@ export function ReadonlyPitch({
   viceId,
   opponents,
   pointsByPlayer,
+  statLines,
+  rules,
 }: ReadonlyPitchProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positionsShort");
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const byId = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
     [players]
   );
+
+  const rule = useMemo(
+    () => (rules ? buildRuleLookup(rules) : null),
+    [rules]
+  );
+
+  const selected = selectedId ? (byId.get(selectedId) ?? null) : null;
+
+  /** Same breakdown as your own team — this squad just isn't editable. */
+  function breakdownFor(player: MarketPlayer) {
+    if (!rule || !statLines) return undefined;
+    const stats = statLines[player.id];
+    return stats ? explainPoints(stats, player.position, rule) : [];
+  }
 
   const groups = useMemo(() => {
     const result: Record<Position, MarketPlayer[]> = {
@@ -75,7 +103,7 @@ export function ReadonlyPitch({
         captain={player.id === captainId}
         vice={player.id === viceId}
         benchOrder={benchOrder}
-        disabled
+        onClick={() => setSelectedId(player.id)}
       />
     );
   }
@@ -96,6 +124,28 @@ export function ReadonlyPitch({
           )}
         </div>
       </section>
+
+      <PlayerModal
+        player={selected}
+        open={selected != null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedId(null);
+        }}
+        isStarter={selectedId ? starterIds.includes(selectedId) : false}
+        isCaptain={selectedId === captainId}
+        isVice={selectedId === viceId}
+        fixtureLabel={
+          selected && opponents[selected.clubId]
+            ? t(
+                opponents[selected.clubId].home ? "fixtureHome" : "fixtureAway",
+                { opp: opponents[selected.clubId].opp }
+              )
+            : undefined
+        }
+        canEdit={false}
+        breakdown={selected ? breakdownFor(selected) : undefined}
+        totalPoints={selected ? (pointsByPlayer[selected.id] ?? null) : null}
+      />
     </div>
   );
 }

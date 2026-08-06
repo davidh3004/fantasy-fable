@@ -19,6 +19,12 @@ import {
   type SquadSettings,
 } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
+import {
+  buildRuleLookup,
+  explainPoints,
+  type ScoringRuleRow,
+  type StatLine,
+} from "@/lib/game/scoring";
 
 export type OpponentInfo = { opp: string; home: boolean };
 
@@ -35,6 +41,10 @@ type LineupEditorProps = {
   pointsByPlayer: Record<string, number>;
   /** playerIds whose match is in play right now (gold treatment). */
   livePlayerIds?: string[];
+  /** playerId → gameweek stat line, for the modal's points breakdown. */
+  statLines?: Record<string, StatLine>;
+  /** Season scoring rules, so the breakdown matches the engine exactly. */
+  rules?: ScoringRuleRow[];
 };
 
 export function LineupEditor({
@@ -47,6 +57,8 @@ export function LineupEditor({
   opponents,
   pointsByPlayer,
   livePlayerIds,
+  statLines,
+  rules,
 }: LineupEditorProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positionsShort");
@@ -71,6 +83,11 @@ export function LineupEditor({
   const byId = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
     [players]
+  );
+
+  const rule = useMemo(
+    () => (rules ? buildRuleLookup(rules) : null),
+    [rules]
   );
 
   const groups = useMemo(() => {
@@ -117,17 +134,20 @@ export function LineupEditor({
   }
 
   function handleTap(id: string) {
-    if (locked) return;
     setMessage(null);
 
+    // The modal is readable in every state — only its actions are gated, so a
+    // locked gameweek can still be inspected player by player.
     if (!swapMode) {
       setSelectedId(id);
       setModalOpen(true);
       return;
     }
 
-    // Swap mode: selectedId is fixed, this tap picks the swap target.
-    if (id === selectedId) {
+    // Swap mode: selectedId is fixed, this tap picks the swap target. Only
+    // reachable from the modal's Switch button, which is hidden when locked —
+    // guarded anyway so the lock can't be bypassed.
+    if (locked || id === selectedId) {
       clearSelection();
       return;
     }
@@ -217,6 +237,17 @@ export function LineupEditor({
     return t(info.home ? "fixtureHome" : "fixtureAway", { opp: info.opp });
   }
 
+  /**
+   * How this player earned their gameweek points. Undefined before any stats
+   * exist, so the modal knows to omit the section entirely rather than claim
+   * the player didn't feature.
+   */
+  function breakdownFor(player: MarketPlayer) {
+    if (!rule || !statLines) return undefined;
+    const stats = statLines[player.id];
+    return stats ? explainPoints(stats, player.position, rule) : [];
+  }
+
   function caption(player: MarketPlayer): string {
     const points = pointsByPlayer[player.id];
     if (points != null) return t("points", { points });
@@ -236,7 +267,6 @@ export function LineupEditor({
         vice={player.id === viceId}
         benchOrder={benchOrder}
         live={livePlayers.has(player.id)}
-        disabled={locked}
         onClick={() => handleTap(player.id)}
         onSwapWith={(targetId) => handleDragSwap(player.id, targetId)}
       />
@@ -328,7 +358,7 @@ export function LineupEditor({
 
       <PlayerModal
         player={selected ?? null}
-        open={modalOpen && !swapMode && !locked}
+        open={modalOpen && !swapMode}
         onOpenChange={(open) => {
           if (!open) clearSelection();
         }}
@@ -336,6 +366,9 @@ export function LineupEditor({
         isCaptain={selectedId === captainId}
         isVice={selectedId === viceId}
         fixtureLabel={selected ? fixtureLabel(selected) : undefined}
+        canEdit={!locked}
+        breakdown={selected ? breakdownFor(selected) : undefined}
+        totalPoints={selected ? (pointsByPlayer[selected.id] ?? null) : null}
         onSwitch={() => {
           setModalOpen(false);
           setSwapMode(true);

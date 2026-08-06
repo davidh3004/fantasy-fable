@@ -16,6 +16,7 @@ import {
   squadPicks,
 } from "@/db/schema";
 import type { SquadSettings } from "./squad";
+import type { StatLine } from "./scoring";
 
 type SeasonContext = {
   season: typeof seasons.$inferSelect;
@@ -602,6 +603,39 @@ export async function getGameweekPlayerStats(
   return new Map(
     rows.map((r) => [r.playerId, { points: r.points, minutes: r.minutes }])
   );
+}
+
+/**
+ * Full stat lines for a gameweek, summed across fixtures so double gameweeks
+ * add up. Feeds the player modal's points breakdown — `getGameweekPlayerStats`
+ * only carries the total, which can't explain *how* it was earned.
+ */
+export async function getGameweekStatLines(
+  gameweekId: string
+): Promise<Map<string, StatLine>> {
+  const rows = await db
+    .select({
+      playerId: playerMatchStats.playerId,
+      minutes: sql<number>`sum(${playerMatchStats.minutes})::int`,
+      goals: sql<number>`sum(${playerMatchStats.goals})::int`,
+      assists: sql<number>`sum(${playerMatchStats.assists})::int`,
+      saves: sql<number>`sum(${playerMatchStats.saves})::int`,
+      penaltiesSaved: sql<number>`sum(${playerMatchStats.penaltiesSaved})::int`,
+      penaltiesMissed: sql<number>`sum(${playerMatchStats.penaltiesMissed})::int`,
+      goalsConceded: sql<number>`sum(${playerMatchStats.goalsConceded})::int`,
+      yellowCards: sql<number>`sum(${playerMatchStats.yellowCards})::int`,
+      redCards: sql<number>`sum(${playerMatchStats.redCards})::int`,
+      ownGoals: sql<number>`sum(${playerMatchStats.ownGoals})::int`,
+      bonusPoints: sql<number>`sum(${playerMatchStats.bonusPoints})::int`,
+      // Any clean sheet across the gameweek's fixtures counts.
+      cleanSheet: sql<boolean>`bool_or(${playerMatchStats.cleanSheet})`,
+    })
+    .from(playerMatchStats)
+    .innerJoin(fixtures, eq(playerMatchStats.fixtureId, fixtures.id))
+    .where(eq(fixtures.gameweekId, gameweekId))
+    .groupBy(playerMatchStats.playerId);
+
+  return new Map(rows.map((r) => [r.playerId, r]));
 }
 
 /** Next gameweek whose deadline hasn't passed. Null between last GW and season end. */

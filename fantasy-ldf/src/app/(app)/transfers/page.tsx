@@ -6,9 +6,15 @@ import { getSessionUser } from "@/lib/supabase/user";
 import { TransfersEditor } from "@/components/transfers/transfers-editor";
 import type { OpponentInfo } from "@/components/team/lineup-editor";
 import { formatDeadline } from "@/lib/game/format";
+import { db } from "@/db";
+import { scoringRules } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import {
   getActiveSeasonContext,
   getFixturesForGameweek,
+  getGameweekPlayerPoints,
+  getGameweekStatLines,
+  getLatestStartedGameweek,
   getMarketPlayers,
   getNextGameweek,
   getSquadPlayers,
@@ -52,6 +58,24 @@ export default async function TransfersPage() {
     opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
   }
 
+  // Form from the most recent gameweek that has actually been played — the
+  // upcoming one has no stats yet, so it can't explain anything.
+  const lastPlayed = await getLatestStartedGameweek(season.id);
+  const [statLineMap, ruleRows, pointsMap] = lastPlayed
+    ? await Promise.all([
+        getGameweekStatLines(lastPlayed.id),
+        db
+          .select({
+            eventKey: scoringRules.eventKey,
+            position: scoringRules.position,
+            points: scoringRules.points,
+          })
+          .from(scoringRules)
+          .where(eq(scoringRules.seasonId, season.id)),
+        getGameweekPlayerPoints(lastPlayed.id),
+      ])
+    : [null, null, null];
+
   const locked = !nextGameweek;
 
   return (
@@ -90,6 +114,9 @@ export default async function TransfersPage() {
           freeTransfers={team.freeTransfers}
           bank={team.budget}
           preSeason={!seasonStarted}
+          statLines={statLineMap ? Object.fromEntries(statLineMap) : undefined}
+          rules={ruleRows ?? undefined}
+          pointsByPlayer={pointsMap ? Object.fromEntries(pointsMap) : undefined}
           locked={locked}
           opponents={opponents}
         />

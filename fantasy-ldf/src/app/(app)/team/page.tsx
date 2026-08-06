@@ -15,6 +15,7 @@ import {
   getActiveSeasonContext,
   getFixturesForGameweek,
   getGameweekPlayerPoints,
+  getGameweekStatLines,
   getLineupPicks,
   getNextGameweek,
   getSeasonGameweeks,
@@ -24,6 +25,9 @@ import {
 } from "@/lib/game/queries";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
 import { effectiveFixtureStatus } from "@/lib/game/status";
+import { db } from "@/db";
+import { scoringRules } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import {
   buildViewableGameweeks,
   pickDefaultGameweek,
@@ -132,6 +136,32 @@ export default async function TeamPage({
   const livePlayerIds = squad
     .filter((player) => playingClubs.has(player.clubId))
     .map((player) => player.id);
+
+  // Stat lines + rules power the modal's points breakdown. Only worth
+  // fetching once a gameweek is under way — there's nothing to explain before.
+  const hasStarted = isFinalized || isLive;
+  const [statLineMap, ruleRows] = hasStarted
+    ? await Promise.all([
+        getGameweekStatLines(selected.id),
+        db
+          .select({
+            eventKey: scoringRules.eventKey,
+            position: scoringRules.position,
+            points: scoringRules.points,
+          })
+          .from(scoringRules)
+          .where(eq(scoringRules.seasonId, season.id)),
+      ])
+    : [null, null];
+
+  const statLines = statLineMap
+    ? Object.fromEntries(
+        squad.flatMap((player) => {
+          const line = statLineMap.get(player.id);
+          return line ? [[player.id, line] as const] : [];
+        })
+      )
+    : undefined;
 
   // Points to show under each player.
   const pointsByPlayer: Record<string, number> = {};
@@ -248,6 +278,8 @@ export default async function TeamPage({
             opponents={opponents}
             pointsByPlayer={pointsByPlayer}
             livePlayerIds={livePlayerIds}
+            statLines={statLines}
+            rules={ruleRows ?? undefined}
           />
         </div>
       )}

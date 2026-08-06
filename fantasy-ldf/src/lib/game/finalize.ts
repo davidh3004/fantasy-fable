@@ -27,6 +27,120 @@ export type FinalizeError =
 
 export type FinalizeResult = { error?: FinalizeError; teams?: number };
 
+export type UnfinalizeError =
+  | "validation"
+  | "not_finished"
+  | "later_finalized"
+  | "unknown";
+
+/**
+ * Reverses runFinalizeGameweek so a wrong result can be corrected.
+ *
+ * Points come back off every team's total using the per-lineup figure that was
+ * banked, so this stays exact even if scoring rules changed in between. The
+ * rollover lineups it created for the next gameweek are deliberately left in
+ * place — managers may have edited them or made transfers since, and
+ * re-finalizing skips lineups that already exist.
+ *
+ * Free transfers are the one inexact part: finalize caps them with `least(...)`,
+ * so a team already at the cap gives back one it never gained. Small, and it
+ * re-banks on the next finalize.
+ */
+export async function runUnfinalizeGameweek(
+  gameweekId: string
+): Promise<{ error?: UnfinalizeError; teams?: number }> {
+  const { season, settings } = await getActiveSeasonContext();
+
+  const [gameweek] = await db
+    .select()
+    .from(gameweeks)
+    .where(
+      and(eq(gameweeks.id, gameweekId), eq(gameweeks.seasonId, season.id))
+    )
+    .limit(1);
+  if (!gameweek) return { error: "validation" };
+  if (gameweek.status !== "finished") return { error: "not_finished" };
+
+  // Unwinding out of order would corrupt totals: a later gameweek's points sit
+  // on top of this one's in every team's running total.
+  const [laterFinalized] = await db
+    .select({ n: count() })
+    .from(gameweeks)
+    .where(
+      and(
+        eq(gameweeks.seasonId, season.id),
+        gt(gameweeks.number, gameweek.number),
+        eq(gameweeks.status, "finished")
+      )
+    );
+  if (laterFinalized.n > 0) return { error: "later_finalized" };
+
+  const lineupRows = await db
+    .select({
+      id: gameweekLineups.id,
+      fantasyTeamId: gameweekLineups.fantasyTeamId,
+      points: gameweekLineups.points,
+    })
+    .from(gameweekLineups)
+    .where(eq(gameweekLineups.gameweekId, gameweekId));
+
+  try {
+    await db.transaction(async (tx) => {
+      for (const lineup of lineupRows) {
+        if (lineup.points != null) {
+          await tx
+            .update(fantasyTeams)
+            .set({
+              totalPoints: sql`${fantasyTeams.totalPoints} - ${lineup.points}`,
+            })
+            .where(eq(fantasyTeams.id, lineup.fantasyTeamId));
+        }
+
+        await tx
+          .update(lineupPicks)
+          .set({ points: null })
+          .where(eq(lineupPicks.lineupId, lineup.id));
+
+        await tx
+          .update(gameweekLineups)
+          .set({ points: null })
+          .where(eq(gameweekLineups.id, lineup.id));
+      }
+
+      // Hand back the free transfer this finalize granted.
+      await tx
+        .update(fantasyTeams)
+        .set({
+          freeTransfers: sql`greatest(${fantasyTeams.freeTransfers} - ${settings.freeTransfersPerGw}, 0)`,
+        })
+        .where(eq(fantasyTeams.seasonId, season.id));
+
+      await tx.execute(sql`
+        update fantasy_teams ft
+        set overall_rank = ranked.rnk
+        from (
+          select id, rank() over (order by total_points desc, created_at asc) as rnk
+          from fantasy_teams
+          where season_id = ${season.id}
+        ) ranked
+        where ft.id = ranked.id
+      `);
+
+      // Back to in play — the deadline has passed, so it derives as live.
+      await tx
+        .update(gameweeks)
+        .set({ status: "locked", finalizedAt: null })
+        .where(eq(gameweeks.id, gameweekId));
+    });
+  } catch (err) {
+    Sentry.captureException(err);
+    console.error("unfinalizeGameweek failed:", err);
+    return { error: "unknown" };
+  }
+
+  return { teams: lineupRows.length };
+}
+
 export async function runFinalizeGameweek(
   gameweekId: string
 ): Promise<FinalizeResult> {

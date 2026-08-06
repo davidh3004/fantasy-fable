@@ -8,6 +8,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Undo2,
   Wand2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -30,6 +31,7 @@ import {
   deleteFixture,
   deleteGameweek,
   finalizeGameweek,
+  unfinalizeGameweek,
   recomputeDeadline,
   saveFixture,
   saveGameweek,
@@ -201,6 +203,26 @@ export function GameweeksManager({
                     cancelLabel={tGlobal("cancel")}
                     destructive={false}
                     onConfirm={() => runAction(() => finalizeGameweek(gw.id))}
+                  />
+                )}
+                {gw.status === "finished" && (
+                  <ConfirmDialog
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t("unfinalize")}
+                        title={t("unfinalize")}
+                        className="cursor-pointer text-yellow-300 hover:text-yellow-200"
+                      >
+                        <Undo2 className="size-4" aria-hidden />
+                      </Button>
+                    }
+                    title={t("unfinalizeConfirmTitle", { number: gw.number })}
+                    description={t("unfinalizeConfirmBody")}
+                    confirmLabel={t("unfinalizeShort")}
+                    cancelLabel={tGlobal("cancel")}
+                    onConfirm={() => runAction(() => unfinalizeGameweek(gw.id))}
                   />
                 )}
                 <ConfirmDialog
