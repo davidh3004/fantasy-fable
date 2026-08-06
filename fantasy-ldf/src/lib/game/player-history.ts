@@ -17,11 +17,12 @@ export function buildPlayerHistory(
   statsByGameweek: GameweekStatLines[],
   rule: (eventKey: string, position: Position) => number
 ): PlayerGameweekRecord[] {
-  return statsByGameweek.map(({ gameweekId, number, lines }) => {
+  return statsByGameweek.map(({ gameweekId, number, lines, opponents }) => {
+    const opponent = opponents[playerId];
     const stats = lines[playerId];
     if (!stats) {
       // Gameweek played, this player didn't feature.
-      return { gameweekId, number, breakdown: [], points: null };
+      return { gameweekId, number, breakdown: [], points: null, opponent };
     }
     const breakdown = explainPoints(stats, position, rule);
     return {
@@ -29,6 +30,7 @@ export function buildPlayerHistory(
       number,
       breakdown,
       points: breakdown.reduce((total, row) => total + row.points, 0),
+      opponent,
     };
   });
 }

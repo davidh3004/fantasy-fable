@@ -141,10 +141,33 @@ export default async function ManagerTeamPage({
     getFixturesForGameweek(startedGameweek.id),
   ]);
 
+  // Rendered above the pitch *and* above the empty state: a gameweek this
+  // manager has no lineup for is still a gameweek you must be able to step
+  // off, so the arrows stay put.
+  const Nav = (
+    <div className="mb-4">
+      <GameweekNav
+        number={startedGameweek.number}
+        statusLabel={isFinalized ? tTeam("finished") : tTeam("live")}
+        subLabel={isFinalized ? tTeam("finishedSub") : tTeam("liveSub")}
+        isLive={!isFinalized}
+        prevHref={
+          selectedIndex > 0 ? gwHref(viewable[selectedIndex - 1].number) : null
+        }
+        nextHref={
+          selectedIndex >= 0 && selectedIndex < viewable.length - 1
+            ? gwHref(viewable[selectedIndex + 1].number)
+            : null
+        }
+      />
+    </div>
+  );
+
   if (picks.length === 0) {
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         {Header}
+        {Nav}
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card/50 px-6 py-16 text-center">
           <EyeOff className="size-7 text-muted-foreground" aria-hidden />
           <p className="text-sm text-muted-foreground">{t("noLineup")}</p>
@@ -234,27 +257,10 @@ export default async function ManagerTeamPage({
       .from(scoringRules)
       .where(eq(scoringRules.seasonId, season.id)),
   ]);
-  const statusLabel = isFinalized ? tTeam("finished") : tTeam("live");
-
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
       {Header}
-      <div className="mb-4">
-        <GameweekNav
-          number={startedGameweek.number}
-          statusLabel={statusLabel}
-          subLabel={isFinalized ? tTeam("finishedSub") : tTeam("liveSub")}
-          isLive={!isFinalized}
-          prevHref={
-            selectedIndex > 0 ? gwHref(viewable[selectedIndex - 1].number) : null
-          }
-          nextHref={
-            selectedIndex >= 0 && selectedIndex < viewable.length - 1
-              ? gwHref(viewable[selectedIndex + 1].number)
-              : null
-          }
-        />
-      </div>
+      {Nav}
 
       <ReadonlyPitch
         players={picks}

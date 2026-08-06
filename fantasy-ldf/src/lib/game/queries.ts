@@ -642,6 +642,8 @@ export type GameweekStatLines = {
   gameweekId: string;
   number: number;
   lines: Record<string, StatLine>;
+  /** playerId → who they faced, e.g. "RMA (F)". Doubles list both. */
+  opponents: Record<string, string>;
 };
 
 /**
@@ -654,6 +656,9 @@ export type GameweekStatLines = {
 export async function getSeasonStatLinesByGameweek(
   seasonId: string
 ): Promise<GameweekStatLines[]> {
+  const homeClub = alias(clubs, "gw_home_club");
+  const awayClub = alias(clubs, "gw_away_club");
+
   const rows = await db
     .select({
       gameweekId: gameweeks.id,
@@ -671,22 +676,33 @@ export async function getSeasonStatLinesByGameweek(
       ownGoals: sql<number>`sum(${playerMatchStats.ownGoals})::int`,
       bonusPoints: sql<number>`sum(${playerMatchStats.bonusPoints})::int`,
       cleanSheet: sql<boolean>`bool_or(${playerMatchStats.cleanSheet})`,
+      // Who they faced, from the player's own club's point of view. A double
+      // gameweek aggregates both, in kickoff order.
+      opponent: sql<string>`string_agg(
+        case when ${fixtures.homeClubId} = ${players.clubId}
+          then ${awayClub.shortName} else ${homeClub.shortName} end,
+        ', ' order by ${fixtures.kickoff}
+      )`,
     })
     .from(playerMatchStats)
     .innerJoin(fixtures, eq(playerMatchStats.fixtureId, fixtures.id))
     .innerJoin(gameweeks, eq(fixtures.gameweekId, gameweeks.id))
+    .innerJoin(players, eq(players.id, playerMatchStats.playerId))
+    .innerJoin(homeClub, eq(homeClub.id, fixtures.homeClubId))
+    .innerJoin(awayClub, eq(awayClub.id, fixtures.awayClubId))
     .where(eq(gameweeks.seasonId, seasonId))
     .groupBy(gameweeks.id, gameweeks.number, playerMatchStats.playerId)
     .orderBy(asc(gameweeks.number));
 
   const byGameweek = new Map<string, GameweekStatLines>();
-  for (const { gameweekId, number, playerId, ...stats } of rows) {
+  for (const { gameweekId, number, playerId, opponent, ...stats } of rows) {
     let entry = byGameweek.get(gameweekId);
     if (!entry) {
-      entry = { gameweekId, number, lines: {} };
+      entry = { gameweekId, number, lines: {}, opponents: {} };
       byGameweek.set(gameweekId, entry);
     }
     entry.lines[playerId] = stats;
+    if (opponent) entry.opponents[playerId] = opponent;
   }
   return [...byGameweek.values()].sort((a, b) => a.number - b.number);
 }

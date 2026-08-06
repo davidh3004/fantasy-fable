@@ -362,7 +362,6 @@
     "ptsLabel": "pts",
     "noLineup": "You didn't have a team for this gameweek.",
     "breakdown": {
-      "title": "How the points were earned",
       "minutes": "Minutes played",
       "goals": "Goals",
       "assists": "Assists",
@@ -375,8 +374,10 @@
       "redCards": "Red cards",
       "ownGoals": "Own goals",
       "bonus": "Bonus",
-      "didNotPlay": "Hasn't played in this gameweek."
-    }
+      "didNotPlay": "Hasn't played in this gameweek.",
+      "noMatch": "No match"
+    },
+    "versus": "vs {opp}"
   },
   "comingSoon": {
     "title": "Under construction",

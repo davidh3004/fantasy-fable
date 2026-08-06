@@ -21,6 +21,8 @@ export type PlayerGameweekRecord = {
   number: number;
   breakdown: BreakdownRow[];
   points: number | null;
+  /** Club(s) faced that gameweek, short form. Absent if they didn't play. */
+  opponent?: string;
 };
 
 const STATUS_DOT: Record<MarketPlayer["status"], string> = {
@@ -227,12 +229,9 @@ export function PlayerModal({
           {/* How the points were earned */}
           {showStats && current && (
             <section>
-              <div className="mb-2 flex items-center gap-2">
-                <h3 className="flex-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  {t("breakdown.title")}
-                </h3>
-                {/* Step through the season jornada by jornada. */}
-                <div className="flex items-center gap-1">
+              {/* Step through the season jornada by jornada. */}
+              <div className="mb-2 flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setIndex((i) => Math.max(0, i - 1))}
@@ -242,7 +241,7 @@ export function PlayerModal({
                   >
                     <ChevronLeft className="size-4" aria-hidden />
                   </button>
-                  <span className="min-w-16 text-center text-xs font-medium tabular-nums">
+                  <span className="min-w-20 text-center text-sm font-semibold tabular-nums">
                     {t("gameweek", { number: current.number })}
                   </span>
                   <button
@@ -257,6 +256,13 @@ export function PlayerModal({
                     <ChevronRight className="size-4" aria-hidden />
                   </button>
                 </div>
+                {/* Who they were up against — the breakdown means little
+                    without knowing the opposition. */}
+                <p className="text-[11px] text-muted-foreground">
+                  {current.opponent
+                    ? t("versus", { opp: current.opponent })
+                    : t("breakdown.noMatch")}
+                </p>
               </div>
               {hasPlayed ? (
                 <ul className="overflow-hidden rounded-lg border border-border">

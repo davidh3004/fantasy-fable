@@ -169,10 +169,21 @@ const history = buildPlayerHistory(
   "p1",
   "FWD",
   [
-    { gameweekId: "gw1", number: 1, lines: { p1: line({ minutes: 90, goals: 1 }) } },
+    {
+      gameweekId: "gw1",
+      number: 1,
+      lines: { p1: line({ minutes: 90, goals: 1 }) },
+      opponents: { p1: "RMA" },
+    },
     // Played, but this player didn't feature.
-    { gameweekId: "gw2", number: 2, lines: { other: line({ minutes: 90 }) } },
-    { gameweekId: "gw3", number: 3, lines: { p1: line({ minutes: 20 }) } },
+    { gameweekId: "gw2", number: 2, lines: { other: line({ minutes: 90 }) }, opponents: {} },
+    // Double gameweek: both opponents listed.
+    {
+      gameweekId: "gw3",
+      number: 3,
+      lines: { p1: line({ minutes: 20 }) },
+      opponents: { p1: "SEV, BET" },
+    },
   ],
   rule
 );
@@ -190,7 +201,18 @@ check(
 check(
   "a gameweek the player missed has an empty breakdown and null points",
   history[1],
-  { gameweekId: "gw2", number: 2, breakdown: [], points: null }
+  {
+    gameweekId: "gw2",
+    number: 2,
+    breakdown: [],
+    points: null,
+    opponent: undefined,
+  }
+);
+check(
+  "the opponent is carried through per gameweek",
+  history.map((h) => h.opponent),
+  ["RMA", undefined, "SEV, BET"]
 );
 check("history is ordered oldest first", history[0].number < history[2].number, true);
 check("empty season yields no entries", buildPlayerHistory("p1", "FWD", [], rule), []);

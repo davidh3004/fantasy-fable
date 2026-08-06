@@ -362,7 +362,6 @@
     "ptsLabel": "pts",
     "noLineup": "No tenías equipo en esta jornada.",
     "breakdown": {
-      "title": "Cómo sumó los puntos",
       "minutes": "Minutos jugados",
       "goals": "Goles",
       "assists": "Asistencias",
@@ -375,8 +374,10 @@
       "redCards": "Tarjetas rojas",
       "ownGoals": "Autogoles",
       "bonus": "Bonus",
-      "didNotPlay": "No ha jugado en esta jornada."
-    }
+      "didNotPlay": "No ha jugado en esta jornada.",
+      "noMatch": "Sin partido"
+    },
+    "versus": "vs {opp}"
   },
   "comingSoon": {
     "title": "En construcción",
