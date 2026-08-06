@@ -638,6 +638,59 @@ export async function getGameweekStatLines(
   return new Map(rows.map((r) => [r.playerId, r]));
 }
 
+export type GameweekStatLines = {
+  gameweekId: string;
+  number: number;
+  lines: Record<string, StatLine>;
+};
+
+/**
+ * Stat lines for every started gameweek of a season, keyed by gameweek then
+ * player. Powers the player modal's gameweek stepper, so a player's record can
+ * be walked jornada by jornada without a round trip per step.
+ *
+ * Bounded by squad size × gameweeks played, which stays small.
+ */
+export async function getSeasonStatLinesByGameweek(
+  seasonId: string
+): Promise<GameweekStatLines[]> {
+  const rows = await db
+    .select({
+      gameweekId: gameweeks.id,
+      number: gameweeks.number,
+      playerId: playerMatchStats.playerId,
+      minutes: sql<number>`sum(${playerMatchStats.minutes})::int`,
+      goals: sql<number>`sum(${playerMatchStats.goals})::int`,
+      assists: sql<number>`sum(${playerMatchStats.assists})::int`,
+      saves: sql<number>`sum(${playerMatchStats.saves})::int`,
+      penaltiesSaved: sql<number>`sum(${playerMatchStats.penaltiesSaved})::int`,
+      penaltiesMissed: sql<number>`sum(${playerMatchStats.penaltiesMissed})::int`,
+      goalsConceded: sql<number>`sum(${playerMatchStats.goalsConceded})::int`,
+      yellowCards: sql<number>`sum(${playerMatchStats.yellowCards})::int`,
+      redCards: sql<number>`sum(${playerMatchStats.redCards})::int`,
+      ownGoals: sql<number>`sum(${playerMatchStats.ownGoals})::int`,
+      bonusPoints: sql<number>`sum(${playerMatchStats.bonusPoints})::int`,
+      cleanSheet: sql<boolean>`bool_or(${playerMatchStats.cleanSheet})`,
+    })
+    .from(playerMatchStats)
+    .innerJoin(fixtures, eq(playerMatchStats.fixtureId, fixtures.id))
+    .innerJoin(gameweeks, eq(fixtures.gameweekId, gameweeks.id))
+    .where(eq(gameweeks.seasonId, seasonId))
+    .groupBy(gameweeks.id, gameweeks.number, playerMatchStats.playerId)
+    .orderBy(asc(gameweeks.number));
+
+  const byGameweek = new Map<string, GameweekStatLines>();
+  for (const { gameweekId, number, playerId, ...stats } of rows) {
+    let entry = byGameweek.get(gameweekId);
+    if (!entry) {
+      entry = { gameweekId, number, lines: {} };
+      byGameweek.set(gameweekId, entry);
+    }
+    entry.lines[playerId] = stats;
+  }
+  return [...byGameweek.values()].sort((a, b) => a.number - b.number);
+}
+
 /** Next gameweek whose deadline hasn't passed. Null between last GW and season end. */
 export async function getNextGameweek(seasonId: string) {
   const [gameweek] = await db

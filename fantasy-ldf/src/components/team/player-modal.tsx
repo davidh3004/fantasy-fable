@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeftRight, Clock } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ArrowLeftRight, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -14,6 +15,13 @@ import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
 import type { BreakdownRow } from "@/lib/game/scoring";
 import type { MarketPlayer } from "@/lib/game/queries";
+
+export type PlayerGameweekRecord = {
+  gameweekId: string;
+  number: number;
+  breakdown: BreakdownRow[];
+  points: number | null;
+};
 
 const STATUS_DOT: Record<MarketPlayer["status"], string> = {
   available: "bg-emerald-400",
@@ -39,10 +47,16 @@ type PlayerModalProps = {
    * whole action block is dropped and this is a read-only stats sheet.
    */
   canEdit?: boolean;
-  /** How this player earned their points in the gameweek being viewed. */
-  breakdown?: BreakdownRow[];
-  /** Total for the gameweek. Null when nothing has been played yet. */
-  totalPoints?: number | null;
+  /**
+   * The player's record, one entry per started gameweek, oldest first. The
+   * modal steps through these so a player can be judged across the season
+   * rather than only in the gameweek that happened to be on screen.
+   */
+  history?: PlayerGameweekRecord[];
+  /** Which gameweek to open on. Falls back to the most recent. */
+  defaultGameweekId?: string;
+  /** Extra actions rendered under the stats (e.g. transfer in/out). */
+  actions?: ReactNode;
   onSwitch?: () => void;
   onMakeCaptain?: () => void;
   onMakeVice?: () => void;
@@ -57,14 +71,35 @@ export function PlayerModal({
   isVice,
   fixtureLabel,
   canEdit = true,
-  breakdown,
-  totalPoints,
+  history,
+  defaultGameweekId,
+  actions,
   onSwitch,
   onMakeCaptain,
   onMakeVice,
 }: PlayerModalProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positions");
+
+  // Index into `history`. Starts on the requested gameweek — the one being
+  // viewed on the page, or the most recent when the caller has no opinion.
+  const defaultIndex = (() => {
+    if (!history || history.length === 0) return 0;
+    const wanted = history.findIndex((h) => h.gameweekId === defaultGameweekId);
+    return wanted >= 0 ? wanted : history.length - 1;
+  })();
+  const [index, setIndex] = useState(defaultIndex);
+
+  // Re-anchor whenever a different player is opened, or the caller's default
+  // moves — otherwise the previous player's position sticks. Adjusted during
+  // render (React's documented pattern) rather than in an effect, which would
+  // paint the stale gameweek for a frame.
+  const anchor = `${player?.id ?? ""}:${defaultIndex}`;
+  const [prevAnchor, setPrevAnchor] = useState(anchor);
+  if (prevAnchor !== anchor) {
+    setPrevAnchor(anchor);
+    setIndex(defaultIndex);
+  }
 
   if (!player) return null;
 
@@ -77,8 +112,13 @@ export function PlayerModal({
 
   // Only meaningful once a gameweek is under way — before that there's nothing
   // to explain, and an empty "didn't play" would be misleading.
-  const hasPlayed = (breakdown?.length ?? 0) > 0;
-  const showStats = breakdown != null;
+  const showStats = history != null && history.length > 0;
+  const current = showStats
+    ? history[Math.min(index, history.length - 1)]
+    : null;
+  const breakdown = current?.breakdown ?? [];
+  const hasPlayed = breakdown.length > 0;
+  const totalPoints = current?.points ?? null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -185,14 +225,42 @@ export function PlayerModal({
           </dl>
 
           {/* How the points were earned */}
-          {showStats && (
+          {showStats && current && (
             <section>
-              <h3 className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {t("breakdown.title")}
-              </h3>
+              <div className="mb-2 flex items-center gap-2">
+                <h3 className="flex-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {t("breakdown.title")}
+                </h3>
+                {/* Step through the season jornada by jornada. */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                    disabled={index <= 0}
+                    aria-label={t("prevGw")}
+                    className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronLeft className="size-4" aria-hidden />
+                  </button>
+                  <span className="min-w-16 text-center text-xs font-medium tabular-nums">
+                    {t("gameweek", { number: current.number })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setIndex((i) => Math.min(history.length - 1, i + 1))
+                    }
+                    disabled={index >= history.length - 1}
+                    aria-label={t("nextGw")}
+                    className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronRight className="size-4" aria-hidden />
+                  </button>
+                </div>
+              </div>
               {hasPlayed ? (
                 <ul className="overflow-hidden rounded-lg border border-border">
-                  {breakdown!.map((row) => (
+                  {breakdown.map((row) => (
                     <li
                       key={row.key}
                       className="flex items-center gap-3 border-b border-border/50 bg-card px-3 py-2 text-sm last:border-0"
@@ -223,6 +291,8 @@ export function PlayerModal({
               )}
             </section>
           )}
+
+          {actions}
 
           {/* Actions — only before the deadline */}
           {canEdit && (

@@ -19,12 +19,9 @@ import {
   type SquadSettings,
 } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
-import {
-  buildRuleLookup,
-  explainPoints,
-  type ScoringRuleRow,
-  type StatLine,
-} from "@/lib/game/scoring";
+import type { ScoringRuleRow } from "@/lib/game/scoring";
+import type { GameweekStatLines } from "@/lib/game/queries";
+import { makeHistoryBuilder } from "@/lib/game/player-history";
 
 export type OpponentInfo = { opp: string; home: boolean };
 
@@ -41,10 +38,12 @@ type LineupEditorProps = {
   pointsByPlayer: Record<string, number>;
   /** playerIds whose match is in play right now (gold treatment). */
   livePlayerIds?: string[];
-  /** playerId → gameweek stat line, for the modal's points breakdown. */
-  statLines?: Record<string, StatLine>;
+  /** Per-gameweek stat lines, so the modal can step through the season. */
+  statsByGameweek?: GameweekStatLines[];
   /** Season scoring rules, so the breakdown matches the engine exactly. */
   rules?: ScoringRuleRow[];
+  /** Gameweek the modal opens on — the one being viewed on the page. */
+  viewingGameweekId?: string;
 };
 
 export function LineupEditor({
@@ -57,8 +56,9 @@ export function LineupEditor({
   opponents,
   pointsByPlayer,
   livePlayerIds,
-  statLines,
+  statsByGameweek,
   rules,
+  viewingGameweekId,
 }: LineupEditorProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positionsShort");
@@ -85,10 +85,7 @@ export function LineupEditor({
     [players]
   );
 
-  const rule = useMemo(
-    () => (rules ? buildRuleLookup(rules) : null),
-    [rules]
-  );
+  const buildHistory = useMemo(() => makeHistoryBuilder(rules), [rules]);
 
   const groups = useMemo(() => {
     const result: Record<Position, MarketPlayer[]> = {
@@ -238,14 +235,13 @@ export function LineupEditor({
   }
 
   /**
-   * How this player earned their gameweek points. Undefined before any stats
-   * exist, so the modal knows to omit the section entirely rather than claim
-   * the player didn't feature.
+   * The player's season record. Undefined before any gameweek has been played,
+   * so the modal omits the section entirely rather than claiming they didn't
+   * feature.
    */
-  function breakdownFor(player: MarketPlayer) {
-    if (!rule || !statLines) return undefined;
-    const stats = statLines[player.id];
-    return stats ? explainPoints(stats, player.position, rule) : [];
+  function historyFor(player: MarketPlayer) {
+    if (!buildHistory || !statsByGameweek) return undefined;
+    return buildHistory(player.id, player.position, statsByGameweek);
   }
 
   function caption(player: MarketPlayer): string {
@@ -367,8 +363,8 @@ export function LineupEditor({
         isVice={selectedId === viceId}
         fixtureLabel={selected ? fixtureLabel(selected) : undefined}
         canEdit={!locked}
-        breakdown={selected ? breakdownFor(selected) : undefined}
-        totalPoints={selected ? (pointsByPlayer[selected.id] ?? null) : null}
+        history={selected ? historyFor(selected) : undefined}
+        defaultGameweekId={viewingGameweekId}
         onSwitch={() => {
           setModalOpen(false);
           setSwapMode(true);

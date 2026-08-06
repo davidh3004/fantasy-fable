@@ -13,6 +13,7 @@ import {
   type StatLine,
 } from "../src/lib/game/scoring";
 import type { Position } from "../src/lib/game/squad";
+import { buildPlayerHistory } from "../src/lib/game/player-history";
 
 let failures = 0;
 
@@ -158,6 +159,41 @@ check(
   explainPoints(line({ minutes: 45 }), "MID", rule),
   [{ key: "minutes", count: 45, points: 1 }]
 );
+
+// ---------------------------------------------------------------------------
+// Player history (the modal's gameweek stepper)
+// ---------------------------------------------------------------------------
+console.log("\n-- season history --");
+
+const history = buildPlayerHistory(
+  "p1",
+  "FWD",
+  [
+    { gameweekId: "gw1", number: 1, lines: { p1: line({ minutes: 90, goals: 1 }) } },
+    // Played, but this player didn't feature.
+    { gameweekId: "gw2", number: 2, lines: { other: line({ minutes: 90 }) } },
+    { gameweekId: "gw3", number: 3, lines: { p1: line({ minutes: 20 }) } },
+  ],
+  rule
+);
+
+check("one entry per played gameweek", history.map((h) => h.number), [1, 2, 3]);
+check(
+  "points match the breakdown sum",
+  history.map((h) => h.points),
+  [
+    computePoints(line({ minutes: 90, goals: 1 }), "FWD", rule),
+    null, // didn't feature
+    computePoints(line({ minutes: 20 }), "FWD", rule),
+  ]
+);
+check(
+  "a gameweek the player missed has an empty breakdown and null points",
+  history[1],
+  { gameweekId: "gw2", number: 2, breakdown: [], points: null }
+);
+check("history is ordered oldest first", history[0].number < history[2].number, true);
+check("empty season yields no entries", buildPlayerHistory("p1", "FWD", [], rule), []);
 
 console.log(
   failures === 0 ? "\nAll breakdown checks pass." : `\n${failures} FAILED`

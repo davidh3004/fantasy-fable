@@ -15,7 +15,7 @@ import {
   getActiveSeasonContext,
   getFixturesForGameweek,
   getGameweekPlayerPoints,
-  getGameweekStatLines,
+  getSeasonStatLinesByGameweek,
   getLineupPicks,
   getNextGameweek,
   getSeasonGameweeks,
@@ -140,9 +140,9 @@ export default async function TeamPage({
   // Stat lines + rules power the modal's points breakdown. Only worth
   // fetching once a gameweek is under way — there's nothing to explain before.
   const hasStarted = isFinalized || isLive;
-  const [statLineMap, ruleRows] = hasStarted
+  const [statsByGameweek, ruleRows] = hasStarted
     ? await Promise.all([
-        getGameweekStatLines(selected.id),
+        getSeasonStatLinesByGameweek(season.id),
         db
           .select({
             eventKey: scoringRules.eventKey,
@@ -153,15 +153,6 @@ export default async function TeamPage({
           .where(eq(scoringRules.seasonId, season.id)),
       ])
     : [null, null];
-
-  const statLines = statLineMap
-    ? Object.fromEntries(
-        squad.flatMap((player) => {
-          const line = statLineMap.get(player.id);
-          return line ? [[player.id, line] as const] : [];
-        })
-      )
-    : undefined;
 
   // Points to show under each player.
   const pointsByPlayer: Record<string, number> = {};
@@ -250,12 +241,14 @@ export default async function TeamPage({
         statusLabel={statusLabel}
         subLabel={subLabel}
         isLive={isLive}
-        prevNumber={
-          selectedIndex > 0 ? viewable[selectedIndex - 1].number : null
+        prevHref={
+          selectedIndex > 0
+            ? `/team?gw=${viewable[selectedIndex - 1].number}`
+            : null
         }
-        nextNumber={
+        nextHref={
           selectedIndex < viewable.length - 1
-            ? viewable[selectedIndex + 1].number
+            ? `/team?gw=${viewable[selectedIndex + 1].number}`
             : null
         }
       />
@@ -278,8 +271,9 @@ export default async function TeamPage({
             opponents={opponents}
             pointsByPlayer={pointsByPlayer}
             livePlayerIds={livePlayerIds}
-            statLines={statLines}
+            statsByGameweek={statsByGameweek ?? undefined}
             rules={ruleRows ?? undefined}
+            viewingGameweekId={selected.id}
           />
         </div>
       )}

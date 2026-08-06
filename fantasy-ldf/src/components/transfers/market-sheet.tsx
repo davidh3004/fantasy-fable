@@ -9,12 +9,9 @@ import { Input } from "@/components/ui/input";
 import { ClubBadge } from "@/components/pitch/player-chip";
 import { cn } from "@/lib/utils";
 import { PlayerModal } from "@/components/team/player-modal";
-import {
-  buildRuleLookup,
-  explainPoints,
-  type ScoringRuleRow,
-  type StatLine,
-} from "@/lib/game/scoring";
+import type { ScoringRuleRow } from "@/lib/game/scoring";
+import type { GameweekStatLines } from "@/lib/game/queries";
+import { makeHistoryBuilder } from "@/lib/game/player-history";
 import { formatMoney } from "@/lib/game/format";
 import type { MarketPlayer } from "@/lib/game/queries";
 import type { Position } from "@/lib/game/squad";
@@ -35,11 +32,9 @@ export type MarketCandidate = {
 type SortKey = "price_desc" | "price_asc" | "name";
 
 type MarketSheetProps = {
-  /** playerId → gameweek stat line, for the info modal's breakdown. */
-  statLines?: Record<string, StatLine>;
+  /** Per-gameweek stat lines, so the info modal can step through the season. */
+  statsByGameweek?: GameweekStatLines[];
   rules?: ScoringRuleRow[];
-  /** playerId → gameweek points, shown in the modal header. */
-  pointsByPlayer?: Record<string, number>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   position: Position | null;
@@ -64,27 +59,22 @@ export function MarketSheet({
   candidates,
   fixtureLabel,
   onPick,
-  statLines,
+  statsByGameweek,
   rules,
-  pointsByPlayer,
 }: MarketSheetProps) {
   const t = useTranslations("transfers.market");
   const tPos = useTranslations("positions");
   const [search, setSearch] = useState("");
   const [infoId, setInfoId] = useState<string | null>(null);
 
-  const rule = useMemo(
-    () => (rules ? buildRuleLookup(rules) : null),
-    [rules]
-  );
+  const buildHistory = useMemo(() => makeHistoryBuilder(rules), [rules]);
   const infoPlayer = infoId
     ? (candidates.find((c) => c.player.id === infoId)?.player ?? null)
     : null;
 
-  function breakdownFor(player: MarketPlayer) {
-    if (!rule || !statLines) return undefined;
-    const stats = statLines[player.id];
-    return stats ? explainPoints(stats, player.position, rule) : [];
+  function historyFor(player: MarketPlayer) {
+    if (!buildHistory || !statsByGameweek) return undefined;
+    return buildHistory(player.id, player.position, statsByGameweek);
   }
   const [clubId, setClubId] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("price_desc");
@@ -288,10 +278,7 @@ export function MarketSheet({
         isVice={false}
         fixtureLabel={infoPlayer ? fixtureLabel(infoPlayer) : undefined}
         canEdit={false}
-        breakdown={infoPlayer ? breakdownFor(infoPlayer) : undefined}
-        totalPoints={
-          infoPlayer ? (pointsByPlayer?.[infoPlayer.id] ?? null) : null
-        }
+        history={infoPlayer ? historyFor(infoPlayer) : undefined}
       />
     </Dialog>
   );

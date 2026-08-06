@@ -8,12 +8,9 @@ import { POSITION_ORDER, type Position } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
 import type { OpponentInfo } from "@/components/team/lineup-editor";
 import { PlayerModal } from "@/components/team/player-modal";
-import {
-  buildRuleLookup,
-  explainPoints,
-  type ScoringRuleRow,
-  type StatLine,
-} from "@/lib/game/scoring";
+import type { ScoringRuleRow } from "@/lib/game/scoring";
+import type { GameweekStatLines } from "@/lib/game/queries";
+import { makeHistoryBuilder } from "@/lib/game/player-history";
 
 type ReadonlyPitchProps = {
   players: MarketPlayer[];
@@ -23,9 +20,11 @@ type ReadonlyPitchProps = {
   viceId: string;
   opponents: Record<string, OpponentInfo>;
   pointsByPlayer: Record<string, number>;
-  /** playerId → gameweek stat line, for the modal's points breakdown. */
-  statLines?: Record<string, StatLine>;
+  /** Per-gameweek stat lines, so the modal can step through the season. */
+  statsByGameweek?: GameweekStatLines[];
   rules?: ScoringRuleRow[];
+  /** Gameweek the modal opens on. */
+  viewingGameweekId?: string;
 };
 
 export function ReadonlyPitch({
@@ -36,8 +35,9 @@ export function ReadonlyPitch({
   viceId,
   opponents,
   pointsByPlayer,
-  statLines,
+  statsByGameweek,
   rules,
+  viewingGameweekId,
 }: ReadonlyPitchProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positionsShort");
@@ -49,18 +49,14 @@ export function ReadonlyPitch({
     [players]
   );
 
-  const rule = useMemo(
-    () => (rules ? buildRuleLookup(rules) : null),
-    [rules]
-  );
+  const buildHistory = useMemo(() => makeHistoryBuilder(rules), [rules]);
 
   const selected = selectedId ? (byId.get(selectedId) ?? null) : null;
 
-  /** Same breakdown as your own team — this squad just isn't editable. */
-  function breakdownFor(player: MarketPlayer) {
-    if (!rule || !statLines) return undefined;
-    const stats = statLines[player.id];
-    return stats ? explainPoints(stats, player.position, rule) : [];
+  /** Same record as your own team — this squad just isn't editable. */
+  function historyFor(player: MarketPlayer) {
+    if (!buildHistory || !statsByGameweek) return undefined;
+    return buildHistory(player.id, player.position, statsByGameweek);
   }
 
   const groups = useMemo(() => {
@@ -143,8 +139,8 @@ export function ReadonlyPitch({
             : undefined
         }
         canEdit={false}
-        breakdown={selected ? breakdownFor(selected) : undefined}
-        totalPoints={selected ? (pointsByPlayer[selected.id] ?? null) : null}
+        history={selected ? historyFor(selected) : undefined}
+        defaultGameweekId={viewingGameweekId}
       />
     </div>
   );

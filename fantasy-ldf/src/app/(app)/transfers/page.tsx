@@ -12,9 +12,7 @@ import { eq } from "drizzle-orm";
 import {
   getActiveSeasonContext,
   getFixturesForGameweek,
-  getGameweekPlayerPoints,
-  getGameweekStatLines,
-  getLatestStartedGameweek,
+  getSeasonStatLinesByGameweek,
   getMarketPlayers,
   getNextGameweek,
   getSquadPlayers,
@@ -58,23 +56,19 @@ export default async function TransfersPage() {
     opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
   }
 
-  // Form from the most recent gameweek that has actually been played — the
-  // upcoming one has no stats yet, so it can't explain anything.
-  const lastPlayed = await getLatestStartedGameweek(season.id);
-  const [statLineMap, ruleRows, pointsMap] = lastPlayed
-    ? await Promise.all([
-        getGameweekStatLines(lastPlayed.id),
-        db
-          .select({
-            eventKey: scoringRules.eventKey,
-            position: scoringRules.position,
-            points: scoringRules.points,
-          })
-          .from(scoringRules)
-          .where(eq(scoringRules.seasonId, season.id)),
-        getGameweekPlayerPoints(lastPlayed.id),
-      ])
-    : [null, null, null];
+  // Every played gameweek, so the modal can step through a player's season
+  // when weighing up a transfer.
+  const [statsByGameweek, ruleRows] = await Promise.all([
+    getSeasonStatLinesByGameweek(season.id),
+    db
+      .select({
+        eventKey: scoringRules.eventKey,
+        position: scoringRules.position,
+        points: scoringRules.points,
+      })
+      .from(scoringRules)
+      .where(eq(scoringRules.seasonId, season.id)),
+  ]);
 
   const locked = !nextGameweek;
 
@@ -114,9 +108,8 @@ export default async function TransfersPage() {
           freeTransfers={team.freeTransfers}
           bank={team.budget}
           preSeason={!seasonStarted}
-          statLines={statLineMap ? Object.fromEntries(statLineMap) : undefined}
-          rules={ruleRows ?? undefined}
-          pointsByPlayer={pointsMap ? Object.fromEntries(pointsMap) : undefined}
+          statsByGameweek={statsByGameweek}
+          rules={ruleRows}
           locked={locked}
           opponents={opponents}
         />
