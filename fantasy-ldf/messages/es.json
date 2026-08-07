@@ -212,7 +212,8 @@
       "leagueAvg": "Media liga",
       "vsAvg": "Sobre media",
       "played": "Jugados",
-      "topScorer": "Máximo anotador"
+      "topScorer": "Máximo anotador",
+      "playedUnit": "jugadores"
     },
     "matches": {
       "title": "Partidos",
@@ -224,7 +225,6 @@
     "league": {
       "title": "Tu liga",
       "viewAll": "Ver tabla",
-      "yourPosition": "Estás en el puesto {rank}",
       "empty": "Todavía no hay clasificación."
     }
   },

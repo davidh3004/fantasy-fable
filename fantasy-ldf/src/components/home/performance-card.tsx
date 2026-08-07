@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { getTranslations } from "next-intl/server";
 import { TrendingUp } from "lucide-react";
 import { PlayerAvatar } from "@/components/shared/player-avatar";
@@ -29,15 +30,23 @@ export async function PerformanceCard({
   const delta =
     points != null && leagueAverage != null ? points - leagueAverage : null;
 
+  // `unit` is the small label under the figure — "pts" where the number is a
+  // score, "players" where it's a count, so the row reads consistently.
   const figures = [
-    { key: "points", value: points != null ? String(points) : "—" },
+    {
+      key: "points",
+      value: points != null ? String(points) : "—",
+      unit: tTeam("ptsLabel"),
+    },
     {
       key: "leagueAvg",
       value: leagueAverage != null ? String(leagueAverage) : "—",
+      unit: tTeam("ptsLabel"),
     },
     {
       key: "vsAvg",
       value: delta != null ? `${delta > 0 ? "+" : ""}${delta}` : "—",
+      unit: tTeam("ptsLabel"),
       tone:
         delta == null
           ? undefined
@@ -50,6 +59,7 @@ export async function PerformanceCard({
     {
       key: "played",
       value: played ? `${played.played}/${played.total}` : "—",
+      unit: t("performance.playedUnit"),
     },
   ];
 
@@ -60,21 +70,34 @@ export async function PerformanceCard({
         {t("performance.title")}
       </h2>
 
-      <dl className="grid grid-cols-4 gap-2">
-        {figures.map(({ key, value, tone }) => (
-          <div key={key}>
-            <dd
-              className={cn(
-                "font-heading text-xl leading-none tabular-nums",
-                tone
-              )}
-            >
-              {value}
-            </dd>
-            <dt className="mt-1 text-[10px] uppercase leading-tight tracking-wider text-muted-foreground">
-              {t(`performance.${key}`)}
-            </dt>
-          </div>
+      {/* Four equal columns, each centred in its own slot, separated by rules
+          that run the full height of the row. */}
+      <dl className="flex items-stretch">
+        {figures.map(({ key, value, unit, tone }, index) => (
+          <Fragment key={key}>
+            {index > 0 && (
+              <div
+                className="w-px shrink-0 self-stretch bg-border"
+                aria-hidden
+              />
+            )}
+            <div className="flex flex-1 flex-col items-center px-1 text-center">
+              <dd
+                className={cn(
+                  "font-heading text-xl leading-none tabular-nums",
+                  tone
+                )}
+              >
+                {value}
+              </dd>
+              <dd className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                {unit}
+              </dd>
+              <dt className="mt-1 text-[10px] uppercase leading-tight tracking-wider text-muted-foreground">
+                {t(`performance.${key}`)}
+              </dt>
+            </div>
+          </Fragment>
         ))}
       </dl>
 
@@ -100,8 +123,13 @@ export async function PerformanceCard({
               C
             </span>
           )}
-          <span className="shrink-0 font-heading text-lg tabular-nums">
-            {topScorer.points}
+          <span className="shrink-0 text-right">
+            <span className="block font-heading text-lg leading-none tabular-nums">
+              {topScorer.points}
+            </span>
+            <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
+              {tTeam("ptsLabel")}
+            </span>
           </span>
         </div>
       )}

@@ -212,7 +212,8 @@
       "leagueAvg": "League avg",
       "vsAvg": "Vs average",
       "played": "Played",
-      "topScorer": "Top scorer"
+      "topScorer": "Top scorer",
+      "playedUnit": "players"
     },
     "matches": {
       "title": "Matches",
@@ -224,7 +225,6 @@
     "league": {
       "title": "Your league",
       "viewAll": "View table",
-      "yourPosition": "You are in {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} place",
       "empty": "No standings yet."
     }
   },
