@@ -138,6 +138,7 @@ export function ReadonlyPitch({
               )
             : undefined
         }
+        opponent={selected ? opponents[selected.clubId] : undefined}
         canEdit={false}
         history={selected ? historyFor(selected) : undefined}
         defaultGameweekId={viewingGameweekId}
