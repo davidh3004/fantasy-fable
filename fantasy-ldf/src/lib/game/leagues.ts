@@ -36,6 +36,12 @@ export type StandingRow = {
   gwPoints: number | null;
   totalPoints: number;
   isMe: boolean;
+  /**
+   * Places gained since the last finalize (positive = moved up), or null when
+   * there's no prior rank to compare against. Derived from the stored ranks,
+   * not the live one, so it doesn't jitter mid-gameweek.
+   */
+  movement: number | null;
 };
 
 /**
@@ -163,6 +169,8 @@ export async function getStandings(
       managerName: profiles.displayName,
       gwPoints,
       totalPoints: fantasyTeams.totalPoints,
+      storedRank: fantasyTeams.overallRank,
+      previousRank: fantasyTeams.previousOverallRank,
     })
     .from(fantasyTeams)
     .innerJoin(profiles, eq(profiles.id, fantasyTeams.userId))
@@ -197,10 +205,14 @@ export async function getStandings(
         )
       : null;
 
-  return rows.map((r) => ({
+  return rows.map(({ storedRank, previousRank, ...r }) => ({
     ...r,
     gwPoints: livePoints ? (livePoints.get(r.fantasyTeamId) ?? null) : r.gwPoints,
     isMe: r.fantasyTeamId === myTeamId,
+    movement:
+      previousRank != null && storedRank != null
+        ? previousRank - storedRank
+        : null,
   }));
 }
 

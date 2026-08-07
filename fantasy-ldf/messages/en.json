@@ -169,12 +169,6 @@
   "home": {
     "title": "Home",
     "greeting": "Hi, {name}",
-    "stats": {
-      "gwPoints": "GW points",
-      "totalPoints": "Total points",
-      "rank": "Rank",
-      "bank": "Bank"
-    },
     "deadline": {
       "title": "Gameweek {number}",
       "subtitle": "Transfer deadline",
@@ -186,12 +180,52 @@
       "seconds": "sec"
     },
     "actions": {
+      "title": "Quick actions",
       "team": "My team",
-      "transfers": "Transfers"
+      "transfers": "Transfers",
+      "matches": "Matches",
+      "leagues": "Leagues"
     },
     "fixtures": {
       "title": "Matches · Gameweek {number}",
       "empty": "No matches scheduled."
+    },
+    "hero": {
+      "thisGameweek": "This gameweek",
+      "overallRank": "Overall rank",
+      "ofManagers": "of {managers} managers",
+      "playersPlayed": "{played} / {total} players have played"
+    },
+    "chips": {
+      "deadline": "Deadline in {time}",
+      "deadlineSub": "Make changes to your team",
+      "injured": "{count, plural, one {# unavailable player} other {# unavailable players}}",
+      "injuredSub": "Tap to review",
+      "freeTransfers": "{count, plural, one {# free transfer} other {# free transfers}}",
+      "freeTransfersSub": "No points hit",
+      "captainNotPlayed": "Captain not played",
+      "captainNotPlayedSub": "Consider a change"
+    },
+    "performance": {
+      "title": "Your performance",
+      "points": "GW points",
+      "leagueAvg": "League avg",
+      "vsAvg": "Vs average",
+      "played": "Played",
+      "topScorer": "Top scorer"
+    },
+    "matches": {
+      "title": "Matches",
+      "viewAll": "View all",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "yourPlayers": "{count, plural, one {# of your players} other {# of your players}}"
+    },
+    "league": {
+      "title": "Your league",
+      "viewAll": "View table",
+      "yourPosition": "You are in {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} place",
+      "empty": "No standings yet."
     }
   },
   "transfers": {

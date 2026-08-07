@@ -18,22 +18,25 @@ export function ListPageSkeleton() {
 /** Stats tiles + hero card + rows — home dashboard placeholder. */
 export function DashboardSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      <Skeleton className="h-4 w-28" />
-      <Skeleton className="mt-2 h-9 w-56" />
-      <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
+      {/* Hero */}
+      <Skeleton className="h-44 w-full rounded-2xl sm:h-36" />
+      {/* Status chips */}
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 rounded-xl" />
+          <Skeleton key={i} className="h-14 rounded-xl" />
         ))}
       </div>
-      <Skeleton className="mt-6 h-32 w-full rounded-xl" />
-      <div className="mt-4 grid grid-cols-2 gap-2.5">
-        <Skeleton className="h-12 rounded-lg" />
-        <Skeleton className="h-12 rounded-lg" />
+      {/* Performance / matches / league */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-64 rounded-xl" />
+        ))}
       </div>
-      <div className="mt-8 flex flex-col gap-2">
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          <Skeleton key={i} className="h-14 rounded-xl" />
         ))}
       </div>
     </main>

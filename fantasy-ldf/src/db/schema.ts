@@ -254,6 +254,8 @@ export const fantasyTeams = pgTable(
     budget: integer("budget").notNull(), // remaining bank, tenths
     totalPoints: integer("total_points").notNull().default(0),
     overallRank: integer("overall_rank"),
+    // Rank before the most recent finalize; drives the movement arrow.
+    previousOverallRank: integer("previous_overall_rank"),
     freeTransfers: smallint("free_transfers").notNull().default(1),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
