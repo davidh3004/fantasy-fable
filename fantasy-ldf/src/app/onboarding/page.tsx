@@ -34,7 +34,7 @@ export default async function OnboardingPage() {
   const t = await getTranslations("onboarding");
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex size-9 items-center justify-center rounded-lg bg-primary">
           <Trophy className="size-5 text-primary-foreground" aria-hidden />

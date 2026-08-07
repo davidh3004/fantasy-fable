@@ -46,7 +46,7 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-13rem)] w-full max-w-2xl flex-col">
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col">
       <h2 className="animate-fade-up font-heading text-2xl">{t("title")}</h2>
       <p
         className="animate-fade-up mt-1.5 text-muted-foreground"

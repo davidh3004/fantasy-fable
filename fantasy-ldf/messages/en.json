@@ -149,10 +149,9 @@
     "allClubs": "All clubs",
     "filterMinPrice": "Minimum price",
     "filterMaxPrice": "Maximum price",
-    "minPriceAny": "Min price",
-    "maxPriceAny": "Max price",
-    "fromPrice": "From {price}",
-    "toPrice": "Up to {price}"
+    "filterPosition": "Filter by position",
+    "priceRange": "Price range",
+    "clearFilters": "Clear filters"
   },
   "positions": {
     "GK": "Goalkeeper",
