@@ -23,7 +23,14 @@ import type { ScoringRuleRow } from "@/lib/game/scoring";
 import type { GameweekStatLines } from "@/lib/game/queries";
 import { makeHistoryBuilder } from "@/lib/game/player-history";
 
-export type OpponentInfo = { opp: string; home: boolean };
+export type OpponentInfo = {
+  opp: string;
+  home: boolean;
+  /** Opponent crest, so the modal can show who they face, not just initials. */
+  name: string;
+  color: string | null;
+  badgeUrl: string | null;
+};
 
 type LineupEditorProps = {
   players: MarketPlayer[]; // the squad of 15
@@ -362,6 +369,7 @@ export function LineupEditor({
         isCaptain={selectedId === captainId}
         isVice={selectedId === viceId}
         fixtureLabel={selected ? fixtureLabel(selected) : undefined}
+        opponent={selected ? opponents[selected.clubId] : undefined}
         canEdit={!locked}
         history={selected ? historyFor(selected) : undefined}
         defaultGameweekId={viewingGameweekId}

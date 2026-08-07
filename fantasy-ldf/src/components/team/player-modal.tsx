@@ -30,11 +30,13 @@ export type PlayerGameweekRecord = {
  * Dissolves the photo's right edge into the club colour behind it. Set both
  * ways round: iOS Safari before 15.4 only honours the prefixed property.
  */
+const FADE =
+  "linear-gradient(to right, black 0%, black 30%, rgba(0,0,0,0.85) 50%," +
+  " rgba(0,0,0,0.55) 68%, rgba(0,0,0,0.25) 84%, transparent 100%)";
+
 const PHOTO_FADE = {
-  maskImage:
-    "linear-gradient(to right, black 0%, black 58%, transparent 98%)",
-  WebkitMaskImage:
-    "linear-gradient(to right, black 0%, black 58%, transparent 98%)",
+  maskImage: FADE,
+  WebkitMaskImage: FADE,
 } as const;
 
 const STATUS_TEXT: Record<MarketPlayer["status"], string> = {
@@ -44,12 +46,6 @@ const STATUS_TEXT: Record<MarketPlayer["status"], string> = {
   unavailable: "text-slate-300",
 };
 
-const STATUS_DOT: Record<MarketPlayer["status"], string> = {
-  available: "bg-emerald-400",
-  injured: "bg-red-400",
-  suspended: "bg-yellow-400",
-  unavailable: "bg-slate-400",
-};
 
 /** Categories whose count reads better as a bare number than a "×n". */
 const MEASURED = new Set(["minutes", "saves", "goalsConceded"]);
@@ -63,6 +59,13 @@ type PlayerModalProps = {
   isVice: boolean;
   /** Sub-line shown in specs: next fixture or points. */
   fixtureLabel?: string;
+  /** Opponent for that fixture, so the tile can carry their crest. */
+  opponent?: {
+    opp: string;
+    name: string;
+    color: string | null;
+    badgeUrl: string | null;
+  };
   /**
    * Lineup actions are only meaningful before the deadline. When false the
    * whole action block is dropped and this is a read-only stats sheet.
@@ -91,6 +94,7 @@ export function PlayerModal({
   isCaptain,
   isVice,
   fixtureLabel,
+  opponent,
   canEdit = true,
   history,
   defaultGameweekId,
@@ -131,13 +135,17 @@ export function PlayerModal({
     ? history[Math.min(index, history.length - 1)]
     : null;
 
-  // Tiles inside the header. Position and club sit under the name, so they're
-  // not repeated here; the gameweek tile tracks the stepper below.
-  const specs: Array<{ key: string; value: string; tone?: string }> = [
+  // Tiles inside the header. Position and club sit under the name, and the
+  // gameweek belongs to the stepper below, so neither is repeated here.
+  const specs: Array<{
+    key: string;
+    value: string;
+    tone?: string;
+    crest?: boolean;
+  }> = [
     { key: "price", value: formatMoney(player.price) },
-    ...(fixtureLabel ? [{ key: "nextFixture", value: fixtureLabel }] : []),
-    ...(current
-      ? [{ key: "gameweek", value: String(current.number) }]
+    ...(fixtureLabel
+      ? [{ key: "nextFixture", value: fixtureLabel, crest: true }]
       : []),
     {
       key: "status",
@@ -148,6 +156,8 @@ export function PlayerModal({
   const breakdown = current?.breakdown ?? [];
   const hasPlayed = breakdown.length > 0;
   const totalPoints = current?.points ?? null;
+
+  const clubColor = player.clubColor ?? "#7c3aed";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -173,7 +183,7 @@ export function PlayerModal({
         <div
           className="relative shrink-0 overflow-hidden rounded-t-2xl"
           style={{
-            background: `linear-gradient(115deg, ${player.clubColor ?? "#7c3aed"} 0%, ${player.clubColor ?? "#7c3aed"}b3 42%, #14142e 100%)`,
+            background: `linear-gradient(115deg, ${clubColor} 0%, ${clubColor}b3 42%, #14142e 100%)`,
           }}
         >
           {/* Photo layer — masked so its right edge fades out instead of
@@ -202,14 +212,17 @@ export function PlayerModal({
                 </svg>
               </span>
             )}
+            {/* Pulls the photo's own backdrop toward the club colour as it
+                dissolves. Without this the mask still leaves a visible seam
+                wherever a studio background meets the gradient. */}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: `linear-gradient(to right, ${clubColor}00 0%, ${clubColor}40 45%, ${clubColor}d9 82%, ${clubColor} 100%)`,
+              }}
+              aria-hidden
+            />
           </div>
-
-          {/* Scrim under the photo's lower edge: player photos are arbitrary,
-              and the availability line has to stay readable over all of them. */}
-          <div
-            className="pointer-events-none absolute bottom-0 left-0 h-16 w-[42%] bg-gradient-to-t from-black/70 to-transparent"
-            aria-hidden
-          />
 
           {/* Club crest, top-left over the photo */}
           <ClubBadge
@@ -229,15 +242,6 @@ export function PlayerModal({
               {isCaptain ? "C" : "V"}
             </span>
           )}
-
-          {/* Availability, bottom-left over the photo */}
-          <span className="absolute bottom-2.5 left-2.5 z-[1] flex items-center gap-1.5 text-[11px] font-medium text-white/90">
-            <span
-              className={cn("size-2 rounded-full", STATUS_DOT[player.status])}
-              aria-hidden
-            />
-            {t(`status.${player.status}`)}
-          </span>
 
           {/* Text column, clear of the photo */}
           <div className="relative ml-[42%] flex flex-col gap-2 py-3 pr-4 pl-1">
@@ -260,7 +264,7 @@ export function PlayerModal({
 
             {/* Fact tiles, translucent so the club colour reads through */}
             <dl className="grid grid-cols-2 gap-1.5">
-              {specs.map(({ key, value, tone }) => (
+              {specs.map(({ key, value, tone, crest }) => (
                 <div
                   key={key}
                   className="rounded-lg bg-black/30 px-2 py-1.5 backdrop-blur-sm"
@@ -270,11 +274,20 @@ export function PlayerModal({
                   </dt>
                   <dd
                     className={cn(
-                      "mt-0.5 truncate text-sm font-semibold",
+                      "mt-0.5 flex items-center gap-1.5 text-sm font-semibold",
                       tone ?? "text-white"
                     )}
                   >
-                    {value}
+                    {crest && opponent && (
+                      <ClubCrest
+                        shortName={opponent.opp}
+                        name={opponent.name}
+                        color={opponent.color}
+                        badgeUrl={opponent.badgeUrl}
+                        className="size-4 shrink-0 text-[6px]"
+                      />
+                    )}
+                    <span className="truncate">{value}</span>
                   </dd>
                 </div>
               ))}

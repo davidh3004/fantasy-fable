@@ -119,8 +119,20 @@ export default async function TeamPage({
   // Clubs whose match is in play *right now* — these get the gold treatment.
   const playingClubs = new Set<string>();
   for (const fixture of gameweekFixtures) {
-    opponents[fixture.homeClubId] = { opp: fixture.awayShort, home: true };
-    opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
+    opponents[fixture.homeClubId] = {
+      opp: fixture.awayShort,
+      home: true,
+      name: fixture.awayName,
+      color: fixture.awayColor,
+      badgeUrl: fixture.awayBadgeUrl,
+    };
+    opponents[fixture.awayClubId] = {
+      opp: fixture.homeShort,
+      home: false,
+      name: fixture.homeName,
+      color: fixture.homeColor,
+      badgeUrl: fixture.homeBadgeUrl,
+    };
     // Derived, so a match that has kicked off counts as live even if nobody
     // moved its status in the admin panel.
     const status = effectiveFixtureStatus(fixture, now);

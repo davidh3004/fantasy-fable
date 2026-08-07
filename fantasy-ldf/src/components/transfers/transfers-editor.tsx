@@ -215,7 +215,7 @@ export function TransfersEditor({
         {stats.map(({ key, value, highlight }) => (
           <div
             key={key}
-            className="rounded-xl border border-border bg-card px-3 py-2.5"
+            className="flex flex-col items-center rounded-xl border border-border bg-card px-3 py-2.5 text-center"
           >
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
               {t(`stats.${key}`)}
@@ -288,6 +288,7 @@ export function TransfersEditor({
         isCaptain={false}
         isVice={false}
         fixtureLabel={selected ? fixtureLabel(selected) : undefined}
+        opponent={selected ? opponents[selected.clubId] : undefined}
         canEdit={false}
         history={selected ? historyFor(selected) : undefined}
         actions={
@@ -325,6 +326,7 @@ export function TransfersEditor({
         available={bankPreview + (selected?.price ?? 0)}
         candidates={candidates}
         fixtureLabel={fixtureLabel}
+        opponents={opponents}
         onPick={handlePick}
         statsByGameweek={statsByGameweek}
         rules={rules}

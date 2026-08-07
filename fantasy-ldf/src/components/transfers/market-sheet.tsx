@@ -16,6 +16,7 @@ import type { GameweekStatLines } from "@/lib/game/queries";
 import { makeHistoryBuilder } from "@/lib/game/player-history";
 import { formatMoney } from "@/lib/game/format";
 import type { MarketPlayer } from "@/lib/game/queries";
+import type { OpponentInfo } from "@/components/team/lineup-editor";
 import type { Position } from "@/lib/game/squad";
 import type { TransferBatchError } from "@/lib/game/transfers";
 
@@ -46,6 +47,8 @@ type MarketSheetProps = {
   available: number;
   candidates: MarketCandidate[];
   fixtureLabel: (player: MarketPlayer) => string | undefined;
+  /** clubId → opponent, so the modal's fixture tile can show their crest. */
+  opponents?: Record<string, OpponentInfo>;
   onPick: (playerId: string) => void;
 };
 
@@ -60,6 +63,7 @@ export function MarketSheet({
   available,
   candidates,
   fixtureLabel,
+  opponents,
   onPick,
   statsByGameweek,
   rules,
@@ -264,6 +268,7 @@ export function MarketSheet({
         isCaptain={false}
         isVice={false}
         fixtureLabel={infoPlayer ? fixtureLabel(infoPlayer) : undefined}
+        opponent={infoPlayer ? opponents?.[infoPlayer.clubId] : undefined}
         canEdit={false}
         history={infoPlayer ? historyFor(infoPlayer) : undefined}
       />

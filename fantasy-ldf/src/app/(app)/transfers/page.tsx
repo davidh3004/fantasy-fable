@@ -52,8 +52,20 @@ export default async function TransfersPage() {
 
   const opponents: Record<string, OpponentInfo> = {};
   for (const fixture of gameweekFixtures) {
-    opponents[fixture.homeClubId] = { opp: fixture.awayShort, home: true };
-    opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
+    opponents[fixture.homeClubId] = {
+      opp: fixture.awayShort,
+      home: true,
+      name: fixture.awayName,
+      color: fixture.awayColor,
+      badgeUrl: fixture.awayBadgeUrl,
+    };
+    opponents[fixture.awayClubId] = {
+      opp: fixture.homeShort,
+      home: false,
+      name: fixture.homeName,
+      color: fixture.homeColor,
+      badgeUrl: fixture.homeBadgeUrl,
+    };
   }
 
   // Every played gameweek, so the modal can step through a player's season
@@ -74,13 +86,17 @@ export default async function TransfersPage() {
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
+      {/* Title left, deadline right, on one line — items-start keeps the pill
+          level with the heading rather than with the team name below it. */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="font-heading text-2xl">{tNav("transfers")}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">{team.name}</p>
+          <p className="mt-0.5 truncate text-sm text-muted-foreground">
+            {team.name}
+          </p>
         </div>
         {nextGameweek && (
-          <p className="rounded-lg bg-card px-3 py-1.5 text-xs text-muted-foreground">
+          <p className="shrink-0 rounded-lg bg-card px-3 py-1.5 text-right text-xs text-muted-foreground">
             {tTeam("gameweek", { number: nextGameweek.number })}
             {" · "}
             <span className="capitalize">
