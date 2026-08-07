@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { AuthAlert } from "@/components/auth/auth-alert";
+import { PlayerAvatar } from "@/components/shared/player-avatar";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
 import {
@@ -38,6 +39,12 @@ const POSITION_BADGE: Record<Position, string> = {
 };
 
 type Filter = "ALL" | Position | "PICKED";
+
+const SELECT_CLASS =
+  "h-10 w-full cursor-pointer rounded-lg border border-border bg-card px-2.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50";
+
+/** "Any price" sentinel — an empty select value keeps the option list simple. */
+const ANY = "";
 
 function normalize(value: string): string {
   return value
@@ -72,6 +79,9 @@ export function SquadPicker({
   );
   const [filter, setFilter] = useState<Filter>("ALL");
   const [search, setSearch] = useState("");
+  const [clubId, setClubId] = useState<string>(ANY);
+  const [minPrice, setMinPrice] = useState<string>(ANY);
+  const [maxPrice, setMaxPrice] = useState<string>(ANY);
 
   const playerById = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
@@ -82,24 +92,52 @@ export function SquadPicker({
     [selectedIds, playerById]
   );
 
+  // Clubs actually represented in the market, alphabetised.
+  const clubOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const p of players) byId.set(p.clubId, p.clubName);
+    return [...byId].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [players]);
+
+  // Whole-dollar steps spanning the real price range, so the bounds always
+  // include every player rather than a hardcoded guess at the scale.
+  const priceSteps = useMemo(() => {
+    if (players.length === 0) return [];
+    let low = Infinity;
+    let high = -Infinity;
+    for (const p of players) {
+      if (p.price < low) low = p.price;
+      if (p.price > high) high = p.price;
+    }
+    const steps: number[] = [];
+    for (let tenths = Math.floor(low / 10) * 10; tenths <= high + 10; tenths += 10) {
+      steps.push(tenths);
+    }
+    return steps;
+  }, [players]);
+
   const quota = positionQuota(settings);
   const remaining = settings.budget - squadCost(selected);
   const isValid = validateSquad(selected, settings) === null;
 
   const visiblePlayers = useMemo(() => {
     const query = normalize(search.trim());
+    const low = minPrice === ANY ? -Infinity : Number(minPrice);
+    const high = maxPrice === ANY ? Infinity : Number(maxPrice);
     return players.filter((p) => {
       if (filter === "PICKED") {
         if (!selectedIds.includes(p.id)) return false;
       } else if (filter !== "ALL" && p.position !== filter) {
         return false;
       }
+      if (clubId !== ANY && p.clubId !== clubId) return false;
+      if (p.price < low || p.price > high) return false;
       if (!query) return true;
       return normalize(
         `${p.firstName} ${p.lastName} ${p.clubName} ${p.clubShortName}`
       ).includes(query);
     });
-  }, [players, filter, search, selectedIds]);
+  }, [players, filter, search, selectedIds, clubId, minPrice, maxPrice]);
 
   function toggle(player: MarketPlayer) {
     setSelectedIds((ids) => {
@@ -154,12 +192,14 @@ export function SquadPicker({
             />
           </div>
         </div>
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
+        {/* One tag per position, splitting the full width evenly so the row
+            reads as a single status bar rather than a ragged pill cluster. */}
+        <div className="mt-2.5 grid grid-cols-4 gap-1.5">
           {countsByPos.map(({ pos, count, quota: posQuota }) => (
             <span
               key={pos}
               className={cn(
-                "rounded-md px-2 py-0.5 text-xs font-medium tabular-nums transition-colors",
+                "rounded-md px-2 py-1 text-center text-xs font-medium tabular-nums transition-colors",
                 // The nudge fires the moment a position line fills up.
                 count === posQuota
                   ? "animate-nudge bg-emerald-400/15 text-emerald-300"
@@ -266,6 +306,50 @@ export function SquadPicker({
             ))}
           </div>
 
+          {/* Club + price bounds. Position stays as pills above — it's the
+              filter people reach for most, so it shouldn't cost a tap. */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <select
+              value={clubId}
+              onChange={(e) => setClubId(e.target.value)}
+              className={cn(SELECT_CLASS, "col-span-2 sm:col-span-1")}
+              aria-label={t("filterClub")}
+            >
+              <option value={ANY}>{t("allClubs")}</option>
+              {clubOptions.map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className={SELECT_CLASS}
+              aria-label={t("filterMinPrice")}
+            >
+              <option value={ANY}>{t("minPriceAny")}</option>
+              {priceSteps.map((tenths) => (
+                <option key={tenths} value={tenths}>
+                  {t("fromPrice", { price: formatMoney(tenths) })}
+                </option>
+              ))}
+            </select>
+            <select
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className={SELECT_CLASS}
+              aria-label={t("filterMaxPrice")}
+            >
+              <option value={ANY}>{t("maxPriceAny")}</option>
+              {priceSteps.map((tenths) => (
+                <option key={tenths} value={tenths}>
+                  {t("toPrice", { price: formatMoney(tenths) })}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <ul className="flex flex-col gap-1.5">
             {visiblePlayers.map((player, index) => {
               const isSelected = selectedIds.includes(player.id);
@@ -294,14 +378,7 @@ export function SquadPicker({
                         "cursor-not-allowed opacity-40"
                     )}
                   >
-                    <span
-                      className={cn(
-                        "w-11 shrink-0 rounded-md px-1.5 py-0.5 text-center text-xs font-semibold",
-                        POSITION_BADGE[player.position]
-                      )}
-                    >
-                      {tPos(player.position)}
-                    </span>
+                    <PlayerAvatar photoUrl={player.photoUrl} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">
                         {player.firstName} {player.lastName}
@@ -310,7 +387,15 @@ export function SquadPicker({
                         {player.clubName}
                       </span>
                     </span>
-                    <span className="tabular-nums text-sm font-semibold">
+                    <span
+                      className={cn(
+                        "w-11 shrink-0 rounded-md px-1.5 py-0.5 text-center text-xs font-semibold",
+                        POSITION_BADGE[player.position]
+                      )}
+                    >
+                      {tPos(player.position)}
+                    </span>
+                    <span className="w-14 shrink-0 text-right tabular-nums text-sm font-semibold">
                       {formatMoney(player.price)}
                     </span>
                     {isSelected ? (
@@ -339,50 +424,57 @@ export function SquadPicker({
 
       {/* Action bar */}
       <div className="sticky bottom-0 z-10 -mx-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onBack}
-            className="h-11 cursor-pointer"
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            {t("back")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleAutoPick}
-            className="h-11 cursor-pointer"
-          >
-            <Shuffle className="size-4" aria-hidden />
-            {t("autoPick")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setSelectedIds([])}
-            disabled={selected.length === 0}
-            className="h-11 cursor-pointer"
-          >
-            <RotateCcw className="size-4" aria-hidden />
-            {t("reset")}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => onSubmit(selectedIds)}
-            disabled={!isValid || isPending}
-            className={cn(
-              "h-11 flex-1 cursor-pointer font-semibold transition-transform active:scale-[0.98] sm:max-w-xs sm:ml-auto",
-              // Pulses once the squad is legal, so "you can continue" is obvious.
-              isValid && !isPending && "animate-ready-glow"
-            )}
-          >
-            {isPending && (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-            )}
-            {t("confirm")}
-          </Button>
+        {/* Two rows: the squad-shaping tools sit together, and the
+            navigation pair (leave / continue) reads left-to-right below. */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-around gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAutoPick}
+              className="h-11 flex-1 cursor-pointer"
+            >
+              <Shuffle className="size-4" aria-hidden />
+              {t("autoPick")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedIds([])}
+              disabled={selected.length === 0}
+              className="h-11 flex-1 cursor-pointer"
+            >
+              <RotateCcw className="size-4" aria-hidden />
+              {t("reset")}
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onBack}
+              className="h-11 shrink-0 cursor-pointer"
+            >
+              <ArrowLeft className="size-4" aria-hidden />
+              {t("back")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => onSubmit(selectedIds)}
+              disabled={!isValid || isPending}
+              className={cn(
+                "h-11 flex-1 cursor-pointer font-semibold transition-transform active:scale-[0.98]",
+                // Pulses once the squad is legal, so "you can continue" is obvious.
+                isValid && !isPending && "animate-ready-glow"
+              )}
+            >
+              {isPending && (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              )}
+              {t("confirm")}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

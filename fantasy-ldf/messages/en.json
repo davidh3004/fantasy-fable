@@ -144,7 +144,15 @@
       "title": "Your team is ready!",
       "body": "You're all set. Taking you to your dashboard...",
       "redirecting": "Redirecting to your dashboard"
-    }
+    },
+    "filterClub": "Filter by club",
+    "allClubs": "All clubs",
+    "filterMinPrice": "Minimum price",
+    "filterMaxPrice": "Maximum price",
+    "minPriceAny": "Min price",
+    "maxPriceAny": "Max price",
+    "fromPrice": "From {price}",
+    "toPrice": "Up to {price}"
   },
   "positions": {
     "GK": "Goalkeeper",
