@@ -280,9 +280,12 @@ export async function runUnfinalizeGameweek(
         })
         .where(eq(fantasyTeams.seasonId, season.id));
 
+      // Both SET expressions read the pre-update row, so the old rank shifts
+      // into previous_overall_rank in the same statement that overwrites it.
       await tx.execute(sql`
         update fantasy_teams ft
-        set overall_rank = ranked.rnk
+        set previous_overall_rank = ft.overall_rank,
+            overall_rank = ranked.rnk
         from (
           select id, rank() over (order by total_points desc, created_at asc) as rnk
           from fantasy_teams
@@ -503,10 +506,13 @@ export async function runFinalizeGameweek(
         })
         .where(eq(fantasyTeams.seasonId, season.id));
 
-      // Global ranks.
+      // Global ranks. previous_overall_rank is cleared rather than restored:
+      // the value from before the finalize we're undoing is unrecoverable, and
+      // a null shows no movement arrow instead of a wrong one.
       await tx.execute(sql`
         update fantasy_teams ft
-        set overall_rank = ranked.rnk
+        set previous_overall_rank = null,
+            overall_rank = ranked.rnk
         from (
           select id, rank() over (order by total_points desc, created_at asc) as rnk
           from fantasy_teams

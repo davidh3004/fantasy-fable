@@ -169,12 +169,6 @@
   "home": {
     "title": "Inicio",
     "greeting": "Hola, {name}",
-    "stats": {
-      "gwPoints": "Pts jornada",
-      "totalPoints": "Pts totales",
-      "rank": "Ranking",
-      "bank": "Banco"
-    },
     "deadline": {
       "title": "Jornada {number}",
       "subtitle": "Cierre del mercado",
@@ -186,12 +180,52 @@
       "seconds": "seg"
     },
     "actions": {
+      "title": "Accesos rápidos",
       "team": "Mi equipo",
-      "transfers": "Fichajes"
+      "transfers": "Fichajes",
+      "matches": "Partidos",
+      "leagues": "Ligas"
     },
     "fixtures": {
       "title": "Partidos · Jornada {number}",
       "empty": "Sin partidos programados."
+    },
+    "hero": {
+      "thisGameweek": "Esta jornada",
+      "overallRank": "Puesto general",
+      "ofManagers": "de {managers} managers",
+      "playersPlayed": "{played} / {total} jugadores han jugado"
+    },
+    "chips": {
+      "deadline": "Cierre en {time}",
+      "deadlineSub": "Ajusta tu equipo",
+      "injured": "{count, plural, one {# jugador con problemas} other {# jugadores con problemas}}",
+      "injuredSub": "Toca para revisar",
+      "freeTransfers": "{count, plural, one {# fichaje libre} other {# fichajes libres}}",
+      "freeTransfersSub": "Sin penalización",
+      "captainNotPlayed": "Capitán sin jugar",
+      "captainNotPlayedSub": "Considera cambiarlo"
+    },
+    "performance": {
+      "title": "Tu rendimiento",
+      "points": "Pts jornada",
+      "leagueAvg": "Media liga",
+      "vsAvg": "Sobre media",
+      "played": "Jugados",
+      "topScorer": "Máximo anotador"
+    },
+    "matches": {
+      "title": "Partidos",
+      "viewAll": "Ver todos",
+      "today": "Hoy",
+      "tomorrow": "Mañana",
+      "yourPlayers": "{count, plural, one {# jugador tuyo} other {# jugadores tuyos}}"
+    },
+    "league": {
+      "title": "Tu liga",
+      "viewAll": "Ver tabla",
+      "yourPosition": "Estás en el puesto {rank}",
+      "empty": "Todavía no hay clasificación."
     }
   },
   "transfers": {
