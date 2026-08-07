@@ -6,7 +6,7 @@ import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomSheetContent } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { AuthAlert } from "@/components/auth/auth-alert";
-import { ClubBadge } from "@/components/pitch/player-chip";
+import { PlayerAvatar } from "@/components/shared/player-avatar";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
 import type { MarketPlayer } from "@/lib/game/queries";
@@ -29,13 +29,16 @@ type ReviewSheetProps = {
 function PlayerCell({ player }: { player: MarketPlayer }) {
   return (
     <span className="flex min-w-0 flex-1 items-center gap-2">
-      <ClubBadge player={player} className="size-6 text-[7px]" />
+      {/* The face identifies who you're moving faster than a crest does —
+          the club is still named on the line below. */}
+      <PlayerAvatar photoUrl={player.photoUrl} className="size-8" />
       <span className="min-w-0">
         <span className="block truncate text-sm font-medium">
           {player.lastName}
         </span>
-        <span className="block text-xs tabular-nums text-muted-foreground">
-          {formatMoney(player.price)}
+        <span className="block truncate text-xs text-muted-foreground">
+          <span className="font-medium">{player.clubShortName}</span>
+          <span className="tabular-nums"> · {formatMoney(player.price)}</span>
         </span>
       </span>
     </span>

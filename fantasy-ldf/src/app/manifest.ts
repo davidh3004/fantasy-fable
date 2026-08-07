@@ -1,16 +1,30 @@
 import type { MetadataRoute } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 import { APP_NAME } from "@/lib/config";
 
-export default function manifest(): MetadataRoute.Manifest {
+/**
+ * Reading the locale makes this a dynamic route rather than a cached one, so
+ * the install prompt matches the language the user picked.
+ *
+ * Caveat: browsers fetch `rel="manifest"` without credentials unless the link
+ * carries `crossorigin="use-credentials"`, so the locale cookie may not arrive
+ * and this can fall back to Spanish. The strings are translated either way.
+ */
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const [t, locale] = await Promise.all([
+    getTranslations("common"),
+    getLocale(),
+  ]);
+
   return {
     name: APP_NAME,
     short_name: APP_NAME,
-    description: "El juego de fútbol fantasy de la Liga Dominicana.",
+    description: t("appDescription"),
     start_url: "/home",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    lang: "es",
+    lang: locale,
     dir: "ltr",
     background_color: "#0f0f23",
     theme_color: "#0f0f23",

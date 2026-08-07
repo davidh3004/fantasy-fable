@@ -71,10 +71,12 @@ export default async function MorePage() {
           <span className="flex-1 text-sm font-medium">{t("rules")}</span>
           <span className="text-xs text-muted-foreground">{t("soon")}</span>
         </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 py-3.5">
-          <Languages className="size-4.5 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-sm font-medium">{t("language")}</span>
-          <LocaleSwitcher className="max-sm:w-full max-sm:justify-center" />
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <Languages className="size-4.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {t("language")}
+          </span>
+          <LocaleSwitcher className="shrink-0" />
         </div>
       </section>
 

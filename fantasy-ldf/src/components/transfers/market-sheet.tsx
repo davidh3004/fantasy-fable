@@ -7,6 +7,8 @@ import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomSheetContent } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
 import { ClubBadge } from "@/components/pitch/player-chip";
+import { PlayerAvatar } from "@/components/shared/player-avatar";
+import { PositionBadge } from "@/components/shared/position-badge";
 import { cn } from "@/lib/utils";
 import { PlayerModal } from "@/components/team/player-modal";
 import type { ScoringRuleRow } from "@/lib/game/scoring";
@@ -78,7 +80,6 @@ export function MarketSheet({
   }
   const [clubId, setClubId] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("price_desc");
-  const [onlyAffordable, setOnlyAffordable] = useState(false);
 
   const clubs = useMemo(() => {
     const seen = new Map<string, { id: string; name: string }>();
@@ -92,9 +93,8 @@ export function MarketSheet({
 
   const visible = useMemo(() => {
     const query = normalize(search.trim());
-    const filtered = candidates.filter(({ player, block }) => {
+    const filtered = candidates.filter(({ player }) => {
       if (clubId !== "all" && player.clubId !== clubId) return false;
-      if (onlyAffordable && block !== null) return false;
       if (!query) return true;
       return normalize(
         `${player.firstName} ${player.lastName} ${player.clubName} ${player.clubShortName}`
@@ -105,13 +105,12 @@ export function MarketSheet({
       if (sort === "price_asc") return a.player.price - b.player.price;
       return a.player.lastName.localeCompare(b.player.lastName);
     });
-  }, [candidates, search, clubId, sort, onlyAffordable]);
+  }, [candidates, search, clubId, sort]);
 
   function resetFilters() {
     setSearch("");
     setClubId("all");
     setSort("price_desc");
-    setOnlyAffordable(false);
   }
 
   return (
@@ -196,19 +195,6 @@ export function MarketSheet({
               <option value="price_asc">{t("sortPriceAsc")}</option>
               <option value="name">{t("sortName")}</option>
             </select>
-            <button
-              type="button"
-              onClick={() => setOnlyAffordable((v) => !v)}
-              aria-pressed={onlyAffordable}
-              className={cn(
-                "h-9 shrink-0 cursor-pointer rounded-lg border px-2.5 text-xs font-medium transition-colors",
-                onlyAffordable
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {t("onlyAffordable")}
-            </button>
           </div>
         </div>
 
@@ -226,7 +212,7 @@ export function MarketSheet({
                     : "cursor-not-allowed opacity-40"
                 )}
               >
-                <ClubBadge player={player} className="size-8 text-[9px]" />
+                <PlayerAvatar photoUrl={player.photoUrl} className="size-9" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">
                     {player.firstName} {player.lastName}
@@ -241,7 +227,8 @@ export function MarketSheet({
                     {t(`blocked.${block === "budget" ? "budget" : "club"}`)}
                   </span>
                 )}
-                <span className="shrink-0 text-sm font-semibold tabular-nums">
+                <PositionBadge position={player.position} />
+                <span className="w-14 shrink-0 text-right text-sm font-semibold tabular-nums">
                   {formatMoney(player.price)}
                 </span>
               </button>

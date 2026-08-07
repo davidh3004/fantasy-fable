@@ -4,7 +4,8 @@
     "tagline": "Build your squad. Rule the league.",
     "loading": "Loading...",
     "cancel": "Cancel",
-    "back": "Back"
+    "back": "Back",
+    "appDescription": "The fantasy football game of the Dominican League."
   },
   "auth": {
     "login": {

@@ -17,28 +17,11 @@ import {
   type FixtureWithClubs,
 } from "@/lib/game/queries";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
+import { ClubCrest } from "@/components/shared/club-badge";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("home");
   return { title: t("title") };
-}
-
-function ClubBadge({
-  shortName,
-  color,
-}: {
-  shortName: string;
-  color: string | null;
-}) {
-  return (
-    <span
-      className="flex size-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-      style={{ backgroundColor: color ?? "#7c3aed" }}
-      aria-hidden
-    >
-      {shortName}
-    </span>
-  );
 }
 
 function FixtureRow({
@@ -54,13 +37,25 @@ function FixtureRow({
         <span className="min-w-0 truncate text-right text-sm font-medium">
           {fixture.homeName}
         </span>
-        <ClubBadge shortName={fixture.homeShort} color={fixture.homeColor} />
+        <ClubCrest
+          shortName={fixture.homeShort}
+          name={fixture.homeName}
+          color={fixture.homeColor}
+          badgeUrl={fixture.homeBadgeUrl}
+          className="size-8 text-[10px]"
+        />
       </div>
       <span className="shrink-0 rounded-md bg-muted px-2 py-1 text-xs tabular-nums text-muted-foreground">
         {formatKickoff(fixture.kickoff, locale)}
       </span>
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
-        <ClubBadge shortName={fixture.awayShort} color={fixture.awayColor} />
+        <ClubCrest
+          shortName={fixture.awayShort}
+          name={fixture.awayName}
+          color={fixture.awayColor}
+          badgeUrl={fixture.awayBadgeUrl}
+          className="size-8 text-[10px]"
+        />
         <span className="min-w-0 truncate text-sm font-medium">
           {fixture.awayName}
         </span>
