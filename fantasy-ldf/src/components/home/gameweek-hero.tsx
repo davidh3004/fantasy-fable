@@ -87,9 +87,13 @@ export async function GameweekHero({
         </div>
 
         {/* Figures — points and rank read as a pair, split down the middle */}
-        <div className="flex shrink-0 flex-col gap-4">
+        <div className="flex w-full flex-col gap-4 lg:w-auto lg:shrink-0">
+          {/* Both halves share one structure — big value, then label, then an
+              optional sub-line — and each centres inside its own half, so the
+              pair reads as a symmetric split rather than two left-aligned
+              blocks pushed against the divider. */}
           <dl className="flex items-stretch">
-            <div className="flex-1 pr-5">
+            <div className="flex min-w-0 flex-1 flex-col items-center px-2 text-center sm:px-4">
               <dd className="flex items-baseline gap-1.5">
                 <span className="font-heading text-4xl leading-none tabular-nums">
                   {points ?? "—"}
@@ -98,27 +102,27 @@ export async function GameweekHero({
                   {tTeam("ptsLabel")}
                 </span>
               </dd>
-              <dt className="mt-1 text-xs text-muted-foreground">
+              <dt className="mt-1.5 text-xs text-muted-foreground">
                 {t("hero.thisGameweek")}
               </dt>
             </div>
 
-            {/* Centred divider: self-stretch keeps it the height of the taller
-                column instead of a fixed guess. */}
+            {/* self-stretch keeps the rule the height of the taller column
+                instead of a fixed guess. */}
             <div className="w-px shrink-0 self-stretch bg-border" aria-hidden />
 
-            <div className="flex-1 pl-5">
-              <dt className="text-xs text-muted-foreground">
-                {t("hero.overallRank")}
-              </dt>
-              <dd className="mt-0.5 flex items-baseline gap-1.5">
+            <div className="flex min-w-0 flex-1 flex-col items-center px-2 text-center sm:px-4">
+              <dd className="flex items-baseline gap-1.5">
                 <span className="font-heading text-4xl leading-none tabular-nums">
                   {rank != null ? `#${rank}` : "—"}
                 </span>
                 <MovementArrow movement={movement} />
               </dd>
+              <dt className="mt-1.5 text-xs text-muted-foreground">
+                {t("hero.overallRank")}
+              </dt>
               {rank != null && managers != null && (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {t("hero.ofManagers", { managers })}
                 </p>
               )}

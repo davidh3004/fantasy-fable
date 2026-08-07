@@ -46,7 +46,11 @@ export function DeadlineCountdown({ deadline }: DeadlineCountdownProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2" role="timer" aria-live="off">
+    <div
+      className="flex flex-wrap items-center justify-center gap-2"
+      role="timer"
+      aria-live="off"
+    >
       {blocks.map(({ key }) => {
         const value = remaining ? remaining[key] : null;
         return (
