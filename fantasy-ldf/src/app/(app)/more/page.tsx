@@ -12,6 +12,7 @@ import { getTranslations } from "next-intl/server";
 import { getSessionUser } from "@/lib/supabase/user";
 import { isAdminUser } from "@/lib/admin";
 import { SignOutButton } from "@/components/more/sign-out-button";
+import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -70,10 +71,10 @@ export default async function MorePage() {
           <span className="flex-1 text-sm font-medium">{t("rules")}</span>
           <span className="text-xs text-muted-foreground">{t("soon")}</span>
         </div>
-        <div className="flex items-center gap-3 px-4 py-3.5 opacity-50">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-4 py-3.5">
           <Languages className="size-4.5 text-muted-foreground" aria-hidden />
           <span className="flex-1 text-sm font-medium">{t("language")}</span>
-          <span className="text-xs text-muted-foreground">{t("soon")}</span>
+          <LocaleSwitcher className="max-sm:w-full max-sm:justify-center" />
         </div>
       </section>
 

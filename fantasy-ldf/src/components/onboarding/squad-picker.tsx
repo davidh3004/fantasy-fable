@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { PlayerAvatar } from "@/components/shared/player-avatar";
+import { RangeSlider } from "@/components/ui/range-slider";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
 import {
@@ -80,8 +81,6 @@ export function SquadPicker({
   const [filter, setFilter] = useState<Filter>("ALL");
   const [search, setSearch] = useState("");
   const [clubId, setClubId] = useState<string>(ANY);
-  const [minPrice, setMinPrice] = useState<string>(ANY);
-  const [maxPrice, setMaxPrice] = useState<string>(ANY);
 
   const playerById = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
@@ -99,22 +98,35 @@ export function SquadPicker({
     return [...byId].sort((a, b) => a[1].localeCompare(b[1]));
   }, [players]);
 
-  // Whole-dollar steps spanning the real price range, so the bounds always
-  // include every player rather than a hardcoded guess at the scale.
-  const priceSteps = useMemo(() => {
-    if (players.length === 0) return [];
+  // The real price spread, rounded out to whole dollars so the slider ends
+  // land on clean numbers and always enclose every player.
+  const priceBounds = useMemo((): [number, number] => {
+    if (players.length === 0) return [0, 0];
     let low = Infinity;
     let high = -Infinity;
     for (const p of players) {
       if (p.price < low) low = p.price;
       if (p.price > high) high = p.price;
     }
-    const steps: number[] = [];
-    for (let tenths = Math.floor(low / 10) * 10; tenths <= high + 10; tenths += 10) {
-      steps.push(tenths);
-    }
-    return steps;
+    return [Math.floor(low / 10) * 10, Math.ceil(high / 10) * 10];
   }, [players]);
+
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
+  // Null until touched, so a market that loads later still gets full bounds.
+  const activeRange = priceRange ?? priceBounds;
+  const hasFilters =
+    filter !== "ALL" ||
+    clubId !== ANY ||
+    search.trim() !== "" ||
+    activeRange[0] > priceBounds[0] ||
+    activeRange[1] < priceBounds[1];
+
+  function clearFilters() {
+    setFilter("ALL");
+    setClubId(ANY);
+    setSearch("");
+    setPriceRange(null);
+  }
 
   const quota = positionQuota(settings);
   const remaining = settings.budget - squadCost(selected);
@@ -122,8 +134,7 @@ export function SquadPicker({
 
   const visiblePlayers = useMemo(() => {
     const query = normalize(search.trim());
-    const low = minPrice === ANY ? -Infinity : Number(minPrice);
-    const high = maxPrice === ANY ? Infinity : Number(maxPrice);
+    const [low, high] = activeRange;
     return players.filter((p) => {
       if (filter === "PICKED") {
         if (!selectedIds.includes(p.id)) return false;
@@ -137,7 +148,7 @@ export function SquadPicker({
         `${p.firstName} ${p.lastName} ${p.clubName} ${p.clubShortName}`
       ).includes(query);
     });
-  }, [players, filter, search, selectedIds, clubId, minPrice, maxPrice]);
+  }, [players, filter, search, selectedIds, clubId, activeRange]);
 
   function toggle(player: MarketPlayer) {
     setSelectedIds((ids) => {
@@ -282,72 +293,63 @@ export function SquadPicker({
             />
           </div>
 
-          <div className="flex flex-wrap gap-1.5" role="tablist">
-            {(["ALL", ...POSITION_ORDER, "PICKED"] as Filter[]).map((f) => (
-              <button
-                key={f}
-                type="button"
-                role="tab"
-                aria-selected={filter === f}
-                onClick={() => setFilter(f)}
-                className={cn(
-                  "cursor-pointer rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
-                  filter === f
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground"
-                )}
+          {/* Club and position share a line; the price range gets its own
+              below, where a slider needs the full width to be draggable. */}
+          <div className="flex flex-col gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={clubId}
+                onChange={(e) => setClubId(e.target.value)}
+                className={SELECT_CLASS}
+                aria-label={t("filterClub")}
               >
-                {f === "ALL"
-                  ? t("filterAll")
-                  : f === "PICKED"
-                    ? `${t("filterPicked")} (${selected.length})`
-                    : tPos(f)}
-              </button>
-            ))}
-          </div>
+                <option value={ANY}>{t("allClubs")}</option>
+                {clubOptions.map(([id, name]) => (
+                  <option key={id} value={id}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as Filter)}
+                className={SELECT_CLASS}
+                aria-label={t("filterPosition")}
+              >
+                <option value="ALL">{t("filterAll")}</option>
+                {POSITION_ORDER.map((pos) => (
+                  <option key={pos} value={pos}>
+                    {tPos(pos)}
+                  </option>
+                ))}
+                <option value="PICKED">
+                  {t("filterPicked")} ({selected.length})
+                </option>
+              </select>
+            </div>
 
-          {/* Club + price bounds. Position stays as pills above — it's the
-              filter people reach for most, so it shouldn't cost a tap. */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <select
-              value={clubId}
-              onChange={(e) => setClubId(e.target.value)}
-              className={cn(SELECT_CLASS, "col-span-2 sm:col-span-1")}
-              aria-label={t("filterClub")}
-            >
-              <option value={ANY}>{t("allClubs")}</option>
-              {clubOptions.map(([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-              className={SELECT_CLASS}
-              aria-label={t("filterMinPrice")}
-            >
-              <option value={ANY}>{t("minPriceAny")}</option>
-              {priceSteps.map((tenths) => (
-                <option key={tenths} value={tenths}>
-                  {t("fromPrice", { price: formatMoney(tenths) })}
-                </option>
-              ))}
-            </select>
-            <select
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              className={SELECT_CLASS}
-              aria-label={t("filterMaxPrice")}
-            >
-              <option value={ANY}>{t("maxPriceAny")}</option>
-              {priceSteps.map((tenths) => (
-                <option key={tenths} value={tenths}>
-                  {t("toPrice", { price: formatMoney(tenths) })}
-                </option>
-              ))}
-            </select>
+            <div className="rounded-lg border border-border bg-card px-3 py-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t("priceRange")}
+                </span>
+                <span className="tabular-nums text-xs font-semibold">
+                  {formatMoney(activeRange[0])} – {formatMoney(activeRange[1])}
+                </span>
+              </div>
+              <RangeSlider
+                value={activeRange}
+                onValueChange={setPriceRange}
+                min={priceBounds[0]}
+                max={priceBounds[1]}
+                // Prices are stored in tenths, so this is a $0.1 increment.
+                step={1}
+                thumbLabel={(index) =>
+                  index === 0 ? t("filterMinPrice") : t("filterMaxPrice")
+                }
+                formatValue={formatMoney}
+              />
+            </div>
           </div>
 
           <ul className="flex flex-col gap-1.5">
@@ -414,8 +416,18 @@ export function SquadPicker({
               );
             })}
             {visiblePlayers.length === 0 && (
-              <li className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+              <li className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
                 {t("noResults")}
+                {hasFilters && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="h-9 cursor-pointer"
+                  >
+                    {t("clearFilters")}
+                  </Button>
+                )}
               </li>
             )}
           </ul>

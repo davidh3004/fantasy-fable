@@ -149,10 +149,9 @@
     "allClubs": "Todos los clubes",
     "filterMinPrice": "Precio mínimo",
     "filterMaxPrice": "Precio máximo",
-    "minPriceAny": "Precio mín.",
-    "maxPriceAny": "Precio máx.",
-    "fromPrice": "Desde {price}",
-    "toPrice": "Hasta {price}"
+    "filterPosition": "Filtrar por posición",
+    "priceRange": "Rango de precio",
+    "clearFilters": "Quitar filtros"
   },
   "positions": {
     "GK": "Portero",

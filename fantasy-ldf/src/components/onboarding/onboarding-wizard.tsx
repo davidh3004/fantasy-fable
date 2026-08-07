@@ -130,7 +130,7 @@ export function OnboardingWizard({
     : undefined;
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-1 flex-col gap-1">
       <div className="flex items-center gap-4">
         <p className="shrink-0 text-sm text-muted-foreground">
           {t("step", { current: step, total: TOTAL_STEPS })}
@@ -141,11 +141,14 @@ export function OnboardingWizard({
         />
       </div>
 
+      {/* flex-1 so a step can push its own footer to the bottom of the
+          viewport; steps that don't simply render at their natural height. */}
       <div
         key={step}
-        className={
+        className={cn(
+          "flex flex-1 flex-col",
           stepDirection === "back" ? "animate-step-back" : "animate-step-forward"
-        }
+        )}
       >
       {step === 1 && (
         <WelcomeStep settings={settings} onContinue={() => goToStep(2)} />
