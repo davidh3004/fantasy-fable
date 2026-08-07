@@ -4,7 +4,8 @@
     "tagline": "Arma tu equipo. Domina la liga.",
     "loading": "Cargando...",
     "cancel": "Cancelar",
-    "back": "Volver"
+    "back": "Volver",
+    "appDescription": "El juego de fútbol fantasy de la Liga Dominicana."
   },
   "auth": {
     "login": {

@@ -17,6 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { PlayerAvatar } from "@/components/shared/player-avatar";
+import {
+  POSITION_BADGE,
+  PositionBadge,
+} from "@/components/shared/position-badge";
 import { RangeSlider } from "@/components/ui/range-slider";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
@@ -31,13 +35,6 @@ import {
   type SquadSettings,
 } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
-
-const POSITION_BADGE: Record<Position, string> = {
-  GK: "bg-yellow-400/15 text-yellow-300",
-  DEF: "bg-cyan-400/15 text-cyan-300",
-  MID: "bg-emerald-400/15 text-emerald-300",
-  FWD: "bg-rose-400/15 text-rose-300",
-};
 
 type Filter = "ALL" | Position | "PICKED";
 
@@ -389,14 +386,7 @@ export function SquadPicker({
                         {player.clubName}
                       </span>
                     </span>
-                    <span
-                      className={cn(
-                        "w-11 shrink-0 rounded-md px-1.5 py-0.5 text-center text-xs font-semibold",
-                        POSITION_BADGE[player.position]
-                      )}
-                    >
-                      {tPos(player.position)}
-                    </span>
+                    <PositionBadge position={player.position} />
                     <span className="w-14 shrink-0 text-right tabular-nums text-sm font-semibold">
                       {formatMoney(player.price)}
                     </span>
