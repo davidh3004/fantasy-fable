@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ClubBadge } from "@/components/pitch/player-chip";
-import { StatusIndicator } from "@/components/shared/status-indicator";
+import { ClubCrest } from "@/components/shared/club-badge";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
 import type { BreakdownRow } from "@/lib/game/scoring";
@@ -24,6 +24,24 @@ export type PlayerGameweekRecord = {
   points: number | null;
   /** Club(s) faced that gameweek, short form. Absent if they didn't play. */
   opponent?: string;
+};
+
+/**
+ * Dissolves the photo's right edge into the club colour behind it. Set both
+ * ways round: iOS Safari before 15.4 only honours the prefixed property.
+ */
+const PHOTO_FADE = {
+  maskImage:
+    "linear-gradient(to right, black 0%, black 58%, transparent 98%)",
+  WebkitMaskImage:
+    "linear-gradient(to right, black 0%, black 58%, transparent 98%)",
+} as const;
+
+const STATUS_TEXT: Record<MarketPlayer["status"], string> = {
+  available: "text-emerald-300",
+  injured: "text-red-300",
+  suspended: "text-yellow-300",
+  unavailable: "text-slate-300",
 };
 
 const STATUS_DOT: Record<MarketPlayer["status"], string> = {
@@ -106,19 +124,27 @@ export function PlayerModal({
 
   if (!player) return null;
 
-  // Position, club and status live in the header now, so the grid carries
-  // only what isn't already stated above it.
-  const specs = [
-    { key: "price", value: formatMoney(player.price) },
-    ...(fixtureLabel ? [{ key: "nextFixture", value: fixtureLabel }] : []),
-  ];
-
   // Only meaningful once a gameweek is under way — before that there's nothing
   // to explain, and an empty "didn't play" would be misleading.
   const showStats = history != null && history.length > 0;
   const current = showStats
     ? history[Math.min(index, history.length - 1)]
     : null;
+
+  // Tiles inside the header. Position and club sit under the name, so they're
+  // not repeated here; the gameweek tile tracks the stepper below.
+  const specs: Array<{ key: string; value: string; tone?: string }> = [
+    { key: "price", value: formatMoney(player.price) },
+    ...(fixtureLabel ? [{ key: "nextFixture", value: fixtureLabel }] : []),
+    ...(current
+      ? [{ key: "gameweek", value: String(current.number) }]
+      : []),
+    {
+      key: "status",
+      value: t(`status.${player.status}`),
+      tone: STATUS_TEXT[player.status],
+    },
+  ];
   const breakdown = current?.breakdown ?? [];
   const hasPlayed = breakdown.length > 0;
   const totalPoints = current?.points ?? null;
@@ -141,29 +167,33 @@ export function PlayerModal({
           className="absolute top-2 left-1/2 z-[1] h-1 w-10 -translate-x-1/2 rounded-full bg-white/30"
           aria-hidden
         />
-        {/* Identity: photo left, details right. The photo is the fastest way
-            to recognise a player, so it anchors the corner rather than being a
-            full-width banner that pushes the facts below the fold. */}
+        {/* Identity. The photo bleeds off the left edge and dissolves into
+            the club colour rather than sitting in its own box, so the header
+            reads as one surface; the fact tiles float on that same surface. */}
         <div
-          className="flex items-stretch gap-3 rounded-t-2xl p-3 pt-5 pr-10"
+          className="relative shrink-0 overflow-hidden rounded-t-2xl"
           style={{
-            background: `linear-gradient(135deg, ${player.clubColor ?? "#7c3aed"} 0%, #181830 120%)`,
+            background: `linear-gradient(115deg, ${player.clubColor ?? "#7c3aed"} 0%, ${player.clubColor ?? "#7c3aed"}b3 42%, #14142e 100%)`,
           }}
         >
-          <div className="relative w-24 shrink-0 overflow-hidden rounded-xl bg-black/25">
+          {/* Photo layer — masked so its right edge fades out instead of
+              ending on a hard line. */}
+          <div className="absolute inset-y-0 left-0 w-[42%]">
             {player.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={player.photoUrl}
                 alt=""
                 referrerPolicy="no-referrer"
-                className="h-full min-h-28 w-full object-cover object-top"
+                className="h-full w-full object-cover object-top"
+                style={PHOTO_FADE}
               />
             ) : (
-              <span className="flex h-full min-h-28 items-center justify-center">
+              <span className="flex h-full items-end justify-center">
                 <svg
                   viewBox="0 0 40 40"
-                  className="size-16 text-white/70"
+                  className="size-24 text-white/60"
+                  style={PHOTO_FADE}
                   fill="currentColor"
                   aria-hidden
                 >
@@ -172,71 +202,87 @@ export function PlayerModal({
                 </svg>
               </span>
             )}
-            <StatusIndicator
-              status={player.status}
-              className="absolute top-1 left-1 size-5"
-            />
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+          {/* Scrim under the photo's lower edge: player photos are arbitrary,
+              and the availability line has to stay readable over all of them. */}
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 h-16 w-[42%] bg-gradient-to-t from-black/70 to-transparent"
+            aria-hidden
+          />
+
+          {/* Club crest, top-left over the photo */}
+          <ClubBadge
+            player={player}
+            className="absolute top-2.5 left-2.5 z-[1] size-9 text-[10px]"
+          />
+
+          {(isCaptain || isVice) && (
+            <span
+              className={cn(
+                "absolute top-2.5 left-13 z-[1] flex size-6 items-center justify-center rounded-full text-xs font-bold shadow",
+                isCaptain
+                  ? "bg-yellow-400 text-yellow-950"
+                  : "bg-slate-200 text-slate-800"
+              )}
+            >
+              {isCaptain ? "C" : "V"}
+            </span>
+          )}
+
+          {/* Availability, bottom-left over the photo */}
+          <span className="absolute bottom-2.5 left-2.5 z-[1] flex items-center gap-1.5 text-[11px] font-medium text-white/90">
+            <span
+              className={cn("size-2 rounded-full", STATUS_DOT[player.status])}
+              aria-hidden
+            />
+            {t(`status.${player.status}`)}
+          </span>
+
+          {/* Text column, clear of the photo */}
+          <div className="relative ml-[42%] flex flex-col gap-2 py-3 pr-4 pl-1">
             <DialogHeader className="gap-0.5 text-left">
-              <DialogTitle className="truncate text-xl text-white">
+              <DialogTitle className="truncate pr-6 text-xl leading-tight text-white">
                 {player.firstName} {player.lastName}
               </DialogTitle>
-              <p className="truncate text-sm text-white/70">
-                {tPos(player.position)}
-              </p>
-              <p className="flex items-center gap-1.5 text-sm text-white/85">
-                <ClubBadge player={player} className="size-5 text-[7px]" />
+              <p className="text-xs text-white/70">{tPos(player.position)}</p>
+              <p className="flex items-center gap-1.5 text-xs text-white/90">
+                <ClubCrest
+                  shortName={player.clubShortName}
+                  name={player.clubName}
+                  color={player.clubColor}
+                  badgeUrl={player.clubBadgeUrl}
+                  className="size-4 text-[6px]"
+                />
                 <span className="truncate">{player.clubName}</span>
               </p>
             </DialogHeader>
 
-            <div className="flex items-center gap-2">
-              {(isCaptain || isVice) && (
-                <span
-                  className={cn(
-                    "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow",
-                    isCaptain
-                      ? "bg-yellow-400 text-yellow-950"
-                      : "bg-slate-200 text-slate-800"
-                  )}
+            {/* Fact tiles, translucent so the club colour reads through */}
+            <dl className="grid grid-cols-2 gap-1.5">
+              {specs.map(({ key, value, tone }) => (
+                <div
+                  key={key}
+                  className="rounded-lg bg-black/30 px-2 py-1.5 backdrop-blur-sm"
                 >
-                  {isCaptain ? "C" : "V"}
-                </span>
-              )}
-              <span className="flex items-center gap-1.5 text-xs text-white/85">
-                <span
-                  className={cn(
-                    "size-2 rounded-full",
-                    STATUS_DOT[player.status]
-                  )}
-                  aria-hidden
-                />
-                {t(`status.${player.status}`)}
-              </span>
-            </div>
+                  <dt className="truncate text-[9px] uppercase tracking-wider text-white/55">
+                    {t(`specs.${key}`)}
+                  </dt>
+                  <dd
+                    className={cn(
+                      "mt-0.5 truncate text-sm font-semibold",
+                      tone ?? "text-white"
+                    )}
+                  >
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
 
         <div className="flex flex-col gap-4 p-4">
-          {/* Specs */}
-          <dl className="grid grid-cols-2 gap-2">
-            {specs.map(({ key, value }) => (
-              <div
-                key={key}
-                className="rounded-lg border border-border bg-card px-3 py-2"
-              >
-                <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {t(`specs.${key}`)}
-                </dt>
-                <dd className="mt-0.5 truncate text-sm font-semibold">
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
           {/* How the points were earned */}
           {showStats && current && (
             <section>

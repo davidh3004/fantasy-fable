@@ -375,7 +375,9 @@
       "position": "Position",
       "club": "Club",
       "price": "Price",
-      "nextFixture": "Next fixture"
+      "nextFixture": "Next fixture",
+      "gameweek": "Gameweek",
+      "status": "Status"
     },
     "status": {
       "available": "Available",

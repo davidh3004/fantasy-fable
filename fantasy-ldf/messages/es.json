@@ -375,7 +375,9 @@
       "position": "Posición",
       "club": "Club",
       "price": "Precio",
-      "nextFixture": "Próximo partido"
+      "nextFixture": "Próximo partido",
+      "gameweek": "Jornada",
+      "status": "Status"
     },
     "status": {
       "available": "Disponible",
