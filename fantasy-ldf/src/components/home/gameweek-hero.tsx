@@ -86,54 +86,58 @@ export async function GameweekHero({
           )}
         </div>
 
-        {/* Figures */}
-        <dl className="flex shrink-0 flex-wrap items-start gap-x-8 gap-y-4">
-          <div>
-            <dt className="text-xs uppercase tracking-wider text-muted-foreground">
-              {t("hero.thisGameweek")}
-            </dt>
-            <dd className="mt-0.5 flex items-baseline gap-1.5">
-              <span className="font-heading text-4xl leading-none tabular-nums">
-                {points ?? "—"}
-              </span>
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                {tTeam("ptsLabel")}
-              </span>
-            </dd>
-          </div>
+        {/* Figures — points and rank read as a pair, split down the middle */}
+        <div className="flex shrink-0 flex-col gap-4">
+          <dl className="flex items-stretch">
+            <div className="flex-1 pr-5">
+              <dd className="flex items-baseline gap-1.5">
+                <span className="font-heading text-4xl leading-none tabular-nums">
+                  {points ?? "—"}
+                </span>
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  {tTeam("ptsLabel")}
+                </span>
+              </dd>
+              <dt className="mt-1 text-xs text-muted-foreground">
+                {t("hero.thisGameweek")}
+              </dt>
+            </div>
 
-          <div>
-            <dt className="text-xs uppercase tracking-wider text-muted-foreground">
-              {t("hero.overallRank")}
-            </dt>
-            <dd className="mt-0.5 flex items-baseline gap-1.5">
-              <span className="font-heading text-4xl leading-none tabular-nums">
-                {rank != null ? `#${rank}` : "—"}
-              </span>
-              <MovementArrow movement={movement} />
-            </dd>
-            {rank != null && managers != null && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {t("hero.ofManagers", { managers })}
-              </p>
-            )}
-          </div>
+            {/* Centred divider: self-stretch keeps it the height of the taller
+                column instead of a fixed guess. */}
+            <div className="w-px shrink-0 self-stretch bg-border" aria-hidden />
+
+            <div className="flex-1 pl-5">
+              <dt className="text-xs text-muted-foreground">
+                {t("hero.overallRank")}
+              </dt>
+              <dd className="mt-0.5 flex items-baseline gap-1.5">
+                <span className="font-heading text-4xl leading-none tabular-nums">
+                  {rank != null ? `#${rank}` : "—"}
+                </span>
+                <MovementArrow movement={movement} />
+              </dd>
+              {rank != null && managers != null && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("hero.ofManagers", { managers })}
+                </p>
+              )}
+            </div>
+          </dl>
 
           {deadline && deadlineLabel && (
-            <div className="min-w-0">
-              <dt className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="flex flex-col items-center gap-1 border-t border-border pt-3 text-center">
+              <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
                 <CalendarClock className="size-3.5" aria-hidden />
                 {t("deadline.subtitle")}
-              </dt>
-              <dd className="mt-1">
-                <DeadlineCountdown deadline={deadline.toISOString()} />
-                <p className="mt-1 text-xs capitalize text-muted-foreground">
-                  {deadlineLabel}
-                </p>
-              </dd>
+              </p>
+              <DeadlineCountdown deadline={deadline.toISOString()} />
+              <p className="text-xs capitalize text-muted-foreground">
+                {deadlineLabel}
+              </p>
             </div>
           )}
-        </dl>
+        </div>
       </div>
     </section>
   );

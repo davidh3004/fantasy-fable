@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ClubBadge } from "@/components/pitch/player-chip";
+import { StatusIndicator } from "@/components/shared/status-indicator";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
 import type { BreakdownRow } from "@/lib/game/scoring";
@@ -105,9 +106,9 @@ export function PlayerModal({
 
   if (!player) return null;
 
+  // Position, club and status live in the header now, so the grid carries
+  // only what isn't already stated above it.
   const specs = [
-    { key: "position", value: tPos(player.position) },
-    { key: "club", value: player.clubName },
     { key: "price", value: formatMoney(player.price) },
     ...(fixtureLabel ? [{ key: "nextFixture", value: fixtureLabel }] : []),
   ];
@@ -140,75 +141,85 @@ export function PlayerModal({
           className="absolute top-2 left-1/2 z-[1] h-1 w-10 -translate-x-1/2 rounded-full bg-white/30"
           aria-hidden
         />
-        {/* Hero: photo over club color */}
+        {/* Identity: photo left, details right. The photo is the fastest way
+            to recognise a player, so it anchors the corner rather than being a
+            full-width banner that pushes the facts below the fold. */}
         <div
-          className="relative flex h-36 shrink-0 items-end justify-center overflow-hidden rounded-t-2xl"
+          className="flex items-stretch gap-3 rounded-t-2xl p-3 pt-5 pr-10"
           style={{
-            background: `linear-gradient(180deg, ${player.clubColor ?? "#7c3aed"} 0%, #181830 130%)`,
+            background: `linear-gradient(135deg, ${player.clubColor ?? "#7c3aed"} 0%, #181830 120%)`,
           }}
         >
-          {player.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={player.photoUrl}
-              alt=""
-              referrerPolicy="no-referrer"
-              className="h-full object-cover object-top"
+          <div className="relative w-24 shrink-0 overflow-hidden rounded-xl bg-black/25">
+            {player.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={player.photoUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-full min-h-28 w-full object-cover object-top"
+              />
+            ) : (
+              <span className="flex h-full min-h-28 items-center justify-center">
+                <svg
+                  viewBox="0 0 40 40"
+                  className="size-16 text-white/70"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <circle cx="20" cy="14" r="7" />
+                  <path d="M6 40c0-9 6.5-14 14-14s14 5 14 14z" />
+                </svg>
+              </span>
+            )}
+            <StatusIndicator
+              status={player.status}
+              className="absolute top-1 left-1 size-5"
             />
-          ) : (
-            <svg
-              viewBox="0 0 40 40"
-              className="h-28 w-28 text-white/70"
-              fill="currentColor"
-              aria-hidden
-            >
-              <circle cx="20" cy="14" r="7" />
-              <path d="M6 40c0-9 6.5-14 14-14s14 5 14 14z" />
-            </svg>
-          )}
-          <ClubBadge
-            player={player}
-            className="absolute bottom-2 left-2 size-8 text-[10px]"
-          />
-          {(isCaptain || isVice) && (
-            <span
-              className={cn(
-                "absolute top-2 left-2 flex size-6 items-center justify-center rounded-full text-xs font-bold shadow",
-                isCaptain
-                  ? "bg-yellow-400 text-yellow-950"
-                  : "bg-slate-200 text-slate-800"
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+            <DialogHeader className="gap-0.5 text-left">
+              <DialogTitle className="truncate text-xl text-white">
+                {player.firstName} {player.lastName}
+              </DialogTitle>
+              <p className="truncate text-sm text-white/70">
+                {tPos(player.position)}
+              </p>
+              <p className="flex items-center gap-1.5 text-sm text-white/85">
+                <ClubBadge player={player} className="size-5 text-[7px]" />
+                <span className="truncate">{player.clubName}</span>
+              </p>
+            </DialogHeader>
+
+            <div className="flex items-center gap-2">
+              {(isCaptain || isVice) && (
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow",
+                    isCaptain
+                      ? "bg-yellow-400 text-yellow-950"
+                      : "bg-slate-200 text-slate-800"
+                  )}
+                >
+                  {isCaptain ? "C" : "V"}
+                </span>
               )}
-            >
-              {isCaptain ? "C" : "V"}
-            </span>
-          )}
-          {/* Gameweek total, anchored opposite the badge */}
-          {totalPoints != null && (
-            <span className="absolute right-2 bottom-2 rounded-lg bg-black/45 px-2.5 py-1 text-right backdrop-blur">
-              <span className="block font-heading text-xl leading-none tabular-nums text-white">
-                {totalPoints}
+              <span className="flex items-center gap-1.5 text-xs text-white/85">
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    STATUS_DOT[player.status]
+                  )}
+                  aria-hidden
+                />
+                {t(`status.${player.status}`)}
               </span>
-              <span className="block text-[9px] uppercase tracking-wider text-white/70">
-                {t("ptsLabel")}
-              </span>
-            </span>
-          )}
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-4 p-4 pt-0">
-          <DialogHeader>
-            <DialogTitle className="text-xl">
-              {player.firstName} {player.lastName}
-            </DialogTitle>
-            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <span
-                className={cn("size-2 rounded-full", STATUS_DOT[player.status])}
-                aria-hidden
-              />
-              {t(`status.${player.status}`)}
-            </p>
-          </DialogHeader>
-
+        <div className="flex flex-col gap-4 p-4">
           {/* Specs */}
           <dl className="grid grid-cols-2 gap-2">
             {specs.map(({ key, value }) => (
@@ -263,6 +274,16 @@ export function PlayerModal({
                     ? t("versus", { opp: current.opponent })
                     : t("breakdown.noMatch")}
                 </p>
+                {totalPoints != null && (
+                  <p className="mt-1 flex items-baseline gap-1.5">
+                    <span className="font-heading text-2xl leading-none tabular-nums">
+                      {totalPoints}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {t("ptsLabel")}
+                    </span>
+                  </p>
+                )}
               </div>
               {hasPlayed ? (
                 <ul className="overflow-hidden rounded-lg border border-border">

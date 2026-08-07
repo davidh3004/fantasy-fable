@@ -148,7 +148,7 @@ export default async function HomePage() {
           topScorer={topScorer(squad, picks, playerStats)}
         />
         <UpcomingMatches fixtures={fixtures} squadByClub={squadByClub} />
-        <MiniStandings rows={standings} myRank={overall?.rank ?? null} />
+        <MiniStandings rows={standings} />
       </div>
 
       <QuickActions />

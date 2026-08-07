@@ -7,14 +7,12 @@ import type { StandingRow } from "@/lib/game/leagues";
 
 type MiniStandingsProps = {
   rows: StandingRow[];
-  myRank: number | null;
   /** How many rows to show before appending your own. */
   limit?: number;
 };
 
 export async function MiniStandings({
   rows,
-  myRank,
   limit = 5,
 }: MiniStandingsProps) {
   const t = await getTranslations("home");
@@ -77,11 +75,6 @@ export async function MiniStandings({
               </li>
             ))}
           </ul>
-          {myRank != null && (
-            <p className="text-center text-xs text-muted-foreground">
-              {t("league.yourPosition", { rank: myRank })}
-            </p>
-          )}
         </>
       )}
     </section>

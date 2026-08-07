@@ -2,7 +2,9 @@
 
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { ArrowLeftRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { StatusIndicator } from "@/components/shared/status-indicator";
 import type { MarketPlayer } from "@/lib/game/queries";
 
 type PlayerChipProps = {
@@ -100,6 +102,7 @@ export function PlayerChip({
   onSwapWith,
   ref,
 }: PlayerChipProps) {
+  const tStatus = useTranslations("team.status");
   const innerRef = useRef<HTMLButtonElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const draggedRef = useRef(false);
@@ -240,6 +243,12 @@ export function PlayerChip({
           player={player}
           className="absolute bottom-0.5 left-0.5 size-4 text-[6px] sm:size-5"
         />
+        {/* Availability flag — bottom-right, so it can't collide with the
+            armband (top-right) or the bench/transfer marker (top-left). */}
+        <StatusIndicator
+          status={player.status}
+          className="absolute right-0.5 bottom-0.5 size-4"
+        />
       </span>
 
       {(captain || vice) && (
@@ -285,6 +294,11 @@ export function PlayerChip({
       >
         {player.lastName}
       </span>
+      {/* The badge above sits inside an aria-hidden region, so the status is
+          announced here instead of being lost. */}
+      {player.status !== "available" && (
+        <span className="sr-only">{tStatus(player.status)}</span>
+      )}
       {caption && (
         <span
           className={cn(
