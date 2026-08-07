@@ -144,7 +144,15 @@
       "title": "¡Tu equipo está listo!",
       "body": "Todo listo. Te llevamos a tu panel...",
       "redirecting": "Redirigiendo a tu panel"
-    }
+    },
+    "filterClub": "Filtrar por club",
+    "allClubs": "Todos los clubes",
+    "filterMinPrice": "Precio mínimo",
+    "filterMaxPrice": "Precio máximo",
+    "minPriceAny": "Precio mín.",
+    "maxPriceAny": "Precio máx.",
+    "fromPrice": "Desde {price}",
+    "toPrice": "Hasta {price}"
   },
   "positions": {
     "GK": "Portero",

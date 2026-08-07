@@ -4,6 +4,7 @@ import { useRef, useState, type CSSProperties } from "react";
 import { Shirt, Trophy, Wallet, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { formatMoney } from "@/lib/game/format";
 import { cn } from "@/lib/utils";
 import type { SquadSettings } from "@/lib/game/squad";
@@ -45,7 +46,7 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-13rem)] w-full max-w-2xl flex-col">
       <h2 className="animate-fade-up font-heading text-2xl">{t("title")}</h2>
       <p
         className="animate-fade-up mt-1.5 text-muted-foreground"
@@ -109,11 +110,19 @@ export function WelcomeStep({ settings, onContinue }: WelcomeStepProps) {
         ))}
       </div>
 
+      {/* Language choice belongs here: it's the first thing a new user sees,
+          and picking it before reading the cards is the point. */}
+      <div className="mt-5 flex justify-center">
+        <LocaleSwitcher />
+      </div>
+
+      {/* mt-auto drops the CTA to the bottom of the viewport — thumb-height on
+          a phone — instead of leaving it floating under the dots. */}
       <Button
         type="button"
         onClick={() => (isLast ? onContinue() : goTo(active + 1))}
         className={cn(
-          "mt-8 h-11 w-full cursor-pointer font-semibold transition-transform active:scale-[0.98]",
+          "mt-auto h-12 w-full shrink-0 cursor-pointer font-semibold transition-transform active:scale-[0.98]",
           isLast && "animate-ready-glow"
         )}
       >

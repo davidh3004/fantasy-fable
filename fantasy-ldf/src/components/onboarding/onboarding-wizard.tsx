@@ -130,7 +130,7 @@ export function OnboardingWizard({
     : undefined;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-1">
       <div className="flex items-center gap-4">
         <p className="shrink-0 text-sm text-muted-foreground">
           {t("step", { current: step, total: TOTAL_STEPS })}
@@ -246,7 +246,7 @@ export function OnboardingWizard({
 
       {step === 3 && (
         <div>
-          <h2 className="mb-4 font-heading text-2xl">{t("squadTitle")}</h2>
+          <h2 className="mb-3 font-heading text-2xl">{t("squadTitle")}</h2>
           <SquadPicker
             players={players}
             settings={settings}
