@@ -6,9 +6,13 @@ import { getSessionUser } from "@/lib/supabase/user";
 import { TransfersEditor } from "@/components/transfers/transfers-editor";
 import type { OpponentInfo } from "@/components/team/lineup-editor";
 import { formatDeadline } from "@/lib/game/format";
+import { db } from "@/db";
+import { scoringRules } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import {
   getActiveSeasonContext,
   getFixturesForGameweek,
+  getSeasonStatLinesByGameweek,
   getMarketPlayers,
   getNextGameweek,
   getSquadPlayers,
@@ -52,6 +56,20 @@ export default async function TransfersPage() {
     opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
   }
 
+  // Every played gameweek, so the modal can step through a player's season
+  // when weighing up a transfer.
+  const [statsByGameweek, ruleRows] = await Promise.all([
+    getSeasonStatLinesByGameweek(season.id),
+    db
+      .select({
+        eventKey: scoringRules.eventKey,
+        position: scoringRules.position,
+        points: scoringRules.points,
+      })
+      .from(scoringRules)
+      .where(eq(scoringRules.seasonId, season.id)),
+  ]);
+
   const locked = !nextGameweek;
 
   return (
@@ -90,6 +108,8 @@ export default async function TransfersPage() {
           freeTransfers={team.freeTransfers}
           bank={team.budget}
           preSeason={!seasonStarted}
+          statsByGameweek={statsByGameweek}
+          rules={ruleRows}
           locked={locked}
           opponents={opponents}
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import {
   ArrowLeft,
   CircleCheck,
@@ -130,7 +130,14 @@ export function SquadPicker({
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               {t("budgetRemaining")}
             </p>
-            <p className="font-heading text-2xl tabular-nums text-emerald-300">
+            {/* keyed so the figure pops each time the budget changes */}
+            <p
+              key={remaining}
+              className={cn(
+                "animate-pop-in font-heading text-2xl tabular-nums",
+                remaining < 0 ? "text-cta" : "text-emerald-300"
+              )}
+            >
               {formatMoney(remaining)}
             </p>
           </div>
@@ -152,9 +159,10 @@ export function SquadPicker({
             <span
               key={pos}
               className={cn(
-                "rounded-md px-2 py-0.5 text-xs font-medium tabular-nums",
+                "rounded-md px-2 py-0.5 text-xs font-medium tabular-nums transition-colors",
+                // The nudge fires the moment a position line fills up.
                 count === posQuota
-                  ? "bg-emerald-400/15 text-emerald-300"
+                  ? "animate-nudge bg-emerald-400/15 text-emerald-300"
                   : POSITION_BADGE[pos]
               )}
             >
@@ -259,22 +267,28 @@ export function SquadPicker({
           </div>
 
           <ul className="flex flex-col gap-1.5">
-            {visiblePlayers.map((player) => {
+            {visiblePlayers.map((player, index) => {
               const isSelected = selectedIds.includes(player.id);
               const block = isSelected
                 ? null
                 : canAdd(selected, player, settings);
               return (
-                <li key={player.id}>
+                <li
+                  key={player.id}
+                  // Only the first rows stagger in — the market can hold
+                  // hundreds of players and animating them all would jank.
+                  className={index < 12 ? "animate-fade-up" : undefined}
+                  style={index < 12 ? ({ "--i": index } as CSSProperties) : undefined}
+                >
                   <button
                     type="button"
                     onClick={() => toggle(player)}
                     disabled={!isSelected && block !== null}
                     className={cn(
-                      "flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors",
+                      "flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-200",
                       isSelected
                         ? "border-primary bg-primary/10"
-                        : "border-border bg-card hover:border-primary/50",
+                        : "border-border bg-card hover:border-primary/50 hover:-translate-y-px",
                       !isSelected &&
                         block !== null &&
                         "cursor-not-allowed opacity-40"
@@ -301,7 +315,7 @@ export function SquadPicker({
                     </span>
                     {isSelected ? (
                       <CircleCheck
-                        className="size-5 shrink-0 text-primary"
+                        className="animate-pop-in size-5 shrink-0 text-primary"
                         aria-hidden
                       />
                     ) : (
@@ -358,7 +372,11 @@ export function SquadPicker({
             type="button"
             onClick={() => onSubmit(selectedIds)}
             disabled={!isValid || isPending}
-            className="h-11 flex-1 cursor-pointer font-semibold sm:max-w-xs sm:ml-auto"
+            className={cn(
+              "h-11 flex-1 cursor-pointer font-semibold transition-transform active:scale-[0.98] sm:max-w-xs sm:ml-auto",
+              // Pulses once the squad is legal, so "you can continue" is obvious.
+              isValid && !isPending && "animate-ready-glow"
+            )}
           >
             {isPending && (
               <Loader2 className="size-4 animate-spin" aria-hidden />

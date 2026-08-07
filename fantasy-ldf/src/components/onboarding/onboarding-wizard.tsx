@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+  type CSSProperties,
+} from "react";
 import { Ban } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -41,6 +47,9 @@ export function OnboardingWizard({
 }: OnboardingWizardProps) {
   const t = useTranslations("onboarding");
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [stepDirection, setStepDirection] = useState<"forward" | "back">(
+    "forward"
+  );
   const [teamName, setTeamName] = useState("");
   const [favoriteClubId, setFavoriteClubId] = useState<string | null>(null);
   const [squadIds, setSquadIds] = useState<string[]>([]);
@@ -55,6 +64,12 @@ export function OnboardingWizard({
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [step]);
+
+  /** Change step, remembering the direction so the next step slides in from it. */
+  function goToStep(next: 1 | 2 | 3 | 4 | 5) {
+    setStepDirection(next < step ? "back" : "forward");
+    setStep(next);
+  }
 
   const playerById = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
@@ -87,7 +102,7 @@ export function OnboardingWizard({
       setCaptainId(initial.captainId);
       setViceId(initial.viceId);
     }
-    setStep(4);
+    goToStep(4);
   }
 
   function handleSubmit() {
@@ -126,8 +141,14 @@ export function OnboardingWizard({
         />
       </div>
 
+      <div
+        key={step}
+        className={
+          stepDirection === "back" ? "animate-step-back" : "animate-step-forward"
+        }
+      >
       {step === 1 && (
-        <WelcomeStep settings={settings} onContinue={() => setStep(2)} />
+        <WelcomeStep settings={settings} onContinue={() => goToStep(2)} />
       )}
 
       {step === 2 && (
@@ -153,17 +174,18 @@ export function OnboardingWizard({
           <div className="mt-6 flex flex-col gap-2">
             <p className="text-sm font-medium">{t("favoriteClub")}</p>
             <div className="grid grid-cols-2 gap-2.5">
-              {clubs.map((club) => (
+              {clubs.map((club, index) => (
                 <button
                   key={club.id}
                   type="button"
                   onClick={() => setFavoriteClubId(club.id)}
                   aria-pressed={favoriteClubId === club.id}
+                  style={{ "--i": index } as CSSProperties}
                   className={cn(
-                    "flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition-colors",
+                    "animate-fade-up flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition-all duration-200",
                     favoriteClubId === club.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-card hover:border-primary/50"
+                      ? "border-primary bg-primary/10 scale-[1.03]"
+                      : "border-border bg-card hover:border-primary/50 hover:-translate-y-0.5"
                   )}
                 >
                   <ClubCrest
@@ -182,11 +204,12 @@ export function OnboardingWizard({
                 type="button"
                 onClick={() => setFavoriteClubId(null)}
                 aria-pressed={favoriteClubId === null}
+                style={{ "--i": clubs.length } as CSSProperties}
                 className={cn(
-                  "flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition-colors",
+                  "animate-fade-up flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border p-4 text-center transition-all duration-200",
                   favoriteClubId === null
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground"
+                    ? "border-primary bg-primary/10 scale-[1.03]"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground hover:-translate-y-0.5"
                 )}
               >
                 <span
@@ -204,14 +227,14 @@ export function OnboardingWizard({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setStep(1)}
+              onClick={() => goToStep(1)}
               className="h-11 w-full cursor-pointer"
             >
               {t("back")}
             </Button>
             <Button
               type="button"
-              onClick={() => setStep(3)}
+              onClick={() => goToStep(3)}
               disabled={!nameValid}
               className="h-11 w-full cursor-pointer font-semibold"
             >
@@ -229,7 +252,7 @@ export function OnboardingWizard({
             settings={settings}
             initialSelectedIds={squadIds}
             onSubmit={handleSquadConfirm}
-            onBack={() => setStep(2)}
+            onBack={() => goToStep(2)}
             isPending={false}
           />
         </div>
@@ -241,7 +264,7 @@ export function OnboardingWizard({
           settings={settings}
           lineup={lineup}
           onLineupChange={setLineup}
-          onBack={() => setStep(3)}
+          onBack={() => goToStep(3)}
           onContinue={() => {
             // Captain/vice must be starters; reset them if they got benched.
             let nextCaptain = captainId;
@@ -258,7 +281,7 @@ export function OnboardingWizard({
             }
             setCaptainId(nextCaptain);
             setViceId(nextVice);
-            setStep(5);
+            goToStep(5);
           }}
         />
       )}
@@ -273,12 +296,13 @@ export function OnboardingWizard({
             setCaptainId(c);
             setViceId(v);
           }}
-          onBack={() => setStep(4)}
+          onBack={() => goToStep(4)}
           onSubmit={handleSubmit}
           isPending={isPending}
           errorMessage={errorMessage}
         />
       )}
+      </div>
     </div>
   );
 }

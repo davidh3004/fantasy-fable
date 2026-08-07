@@ -177,5 +177,6 @@ export async function createFantasyTeam(
     return { error: "unknown" };
   }
 
-  redirect("/home");
+  // Celebration screen; it moves on to /home by itself.
+  redirect("/onboarding/success");
 }

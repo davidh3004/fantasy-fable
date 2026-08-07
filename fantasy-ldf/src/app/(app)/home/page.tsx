@@ -10,11 +10,13 @@ import { formatDeadline, formatKickoff, formatMoney } from "@/lib/game/format";
 import {
   getActiveSeasonContext,
   getFixturesForNextGameweek,
-  getLatestLineupForUser,
+  getLatestStartedGameweek,
   getNextGameweek,
   getUserFantasyTeam,
+  toSquadSettings,
   type FixtureWithClubs,
 } from "@/lib/game/queries";
+import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("home");
@@ -72,25 +74,31 @@ export default async function HomePage() {
   if (!user) redirect("/login");
 
   // Season context is TTL-cached; everything else runs in one parallel stage.
-  const { season } = await getActiveSeasonContext();
+  const { season, settings } = await getActiveSeasonContext();
 
-  const [team, nextGameweek, latestLineup, gameweekFixtures, t, locale] =
+  const [team, nextGameweek, startedGameweek, gameweekFixtures, t, locale] =
     await Promise.all([
       getUserFantasyTeam(user.id, season.id),
       getNextGameweek(season.id),
-      getLatestLineupForUser(user.id, season.id),
+      getLatestStartedGameweek(season.id),
       getFixturesForNextGameweek(season.id),
       getTranslations("home"),
       getLocale(),
     ]);
   if (!team) redirect("/onboarding");
 
+  // Points for the gameweek in play (live) or the last one finalized — not
+  // whichever lineup row happens to be newest, which is empty after rollover.
+  const gameweekPoints = startedGameweek
+    ? await getTeamGameweekPoints(team.id, startedGameweek, toSquadSettings(settings))
+    : null;
+
   const name = user.displayName || (user.email ?? "");
 
   const stats = [
     {
       key: "gwPoints",
-      value: latestLineup?.points != null ? String(latestLineup.points) : "—",
+      value: gameweekPoints != null ? String(gameweekPoints) : "—",
     },
     { key: "totalPoints", value: String(team.totalPoints) },
     {

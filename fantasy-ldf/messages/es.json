@@ -139,6 +139,11 @@
       "lineup_invalid": "La alineación no es válida. Revisa tu once y tu banca.",
       "captain_invalid": "Elige un capitán y un vice distintos dentro de tu once.",
       "unknown": "Algo salió mal. Intenta de nuevo."
+    },
+    "created": {
+      "title": "¡Tu equipo está listo!",
+      "body": "Todo listo. Te llevamos a tu panel...",
+      "redirecting": "Redirigiendo a tu panel"
     }
   },
   "positions": {
@@ -211,7 +216,8 @@
       "blocked": {
         "budget": "Sin banco",
         "club": "Límite club"
-      }
+      },
+      "info": "Información de {name}"
     },
     "review": {
       "title": "Revisar fichajes",
@@ -253,7 +259,8 @@
     "title": "Equipo del rival",
     "back": "Volver",
     "hidden": "Este equipo estará visible cuando comience la primera jornada.",
-    "noLineup": "Este equipo no tenía alineación en esa jornada."
+    "noLineup": "Este equipo no tenía alineación en esa jornada.",
+    "gameweekPoints": "{points} pts jornada"
   },
   "leagues": {
     "title": "Ligas",
@@ -351,7 +358,26 @@
       "captain_invalid": "Capitán y vice deben ser titulares distintos.",
       "no_team": "Todavía no tienes equipo.",
       "unknown": "Algo salió mal. Intenta de nuevo."
-    }
+    },
+    "ptsLabel": "pts",
+    "noLineup": "No tenías equipo en esta jornada.",
+    "breakdown": {
+      "minutes": "Minutos jugados",
+      "goals": "Goles",
+      "assists": "Asistencias",
+      "cleanSheet": "Portería a cero",
+      "saves": "Atajadas",
+      "penaltiesSaved": "Penales atajados",
+      "penaltiesMissed": "Penales fallados",
+      "goalsConceded": "Goles recibidos",
+      "yellowCards": "Tarjetas amarillas",
+      "redCards": "Tarjetas rojas",
+      "ownGoals": "Autogoles",
+      "bonus": "Bonus",
+      "didNotPlay": "No ha jugado en esta jornada.",
+      "noMatch": "Sin partido"
+    },
+    "versus": "vs {opp}"
   },
   "comingSoon": {
     "title": "En construcción",
@@ -399,7 +425,10 @@
         "not_locked": "La jornada aún no cierra. Espera a que pase la fecha límite.",
         "fixtures_pending": "Faltan partidos por registrar. Completa todos los resultados primero.",
         "already_finished": "La jornada ya fue finalizada.",
-        "unknown": "Algo salió mal. Intenta de nuevo."
+        "unknown": "Algo salió mal. Intenta de nuevo.",
+        "gameweek_finished": "La jornada ya fue finalizada y no se puede eliminar.",
+        "not_finished": "La jornada no está finalizada, no hay nada que deshacer.",
+        "later_finalized": "Deshaz primero las jornadas finalizadas posteriores — hacerlo fuera de orden corrompería los totales."
       }
     },
     "scoring": {
@@ -483,7 +512,13 @@
       "home": "Local",
       "away": "Visitante",
       "kickoff": "Inicio del partido",
-      "finished": "Final"
+      "finished": "Final",
+      "deleteCascade": "También se eliminarán las alineaciones, fichajes y chips guardados de esta jornada.",
+      "deleteFinished": "Esta jornada ya fue finalizada — sus puntos cuentan en la clasificación y no se puede eliminar.",
+      "unfinalize": "Deshacer finalización",
+      "unfinalizeShort": "Deshacer",
+      "unfinalizeConfirmTitle": "¿Deshacer la finalización de la jornada {number}?",
+      "unfinalizeConfirmBody": "Los puntos se restan del total de cada equipo, se borran las instantáneas por jugador y se recalculan los rankings, para que puedas corregir resultados y finalizar de nuevo. Las alineaciones ya trasladadas a la siguiente jornada se conservan. Cada equipo también devuelve un fichaje gratis — un equipo que ya estaba en el tope pierde uno que nunca ganó."
     },
     "results": {
       "intro": "Elige un partido para registrar el resultado y las estadísticas de los jugadores.",
@@ -507,7 +542,8 @@
         "penaltiesMissed": "PenF",
         "yellowCards": "TA",
         "redCards": "TR",
-        "ownGoals": "AG"
+        "ownGoals": "AG",
+        "points": "Pts"
       },
       "bonusTitle": "Puntos de bonificación",
       "bonusHint": "Elige a los 3 mejores del partido (3, 2 y 1 puntos extra).",
@@ -519,7 +555,42 @@
         "forbidden": "No tienes permisos de administrador.",
         "validation": "Revisa el marcador y las estadísticas.",
         "unknown": "Algo salió mal. Intenta de nuevo."
-      }
+      },
+      "tabs": {
+        "lineups": "Alineaciones",
+        "live": "En vivo",
+        "all": "Todas las estadísticas"
+      },
+      "clock": "Minuto del partido",
+      "clockHint": "Los minutos jugados se calculan con la alineación y los cambios según este reloj. Sincronízalo con la hora real o salta al final.",
+      "syncClock": "Sincronizar",
+      "fullTime": "Final",
+      "lineupsHint": "Elige el once inicial de cada equipo. Solo estos jugadores aparecen en En vivo, y sus minutos corren desde el inicio hasta que son sustituidos.",
+      "rapidTitle": "Acciones rápidas",
+      "rapidHint": "Toca una acción y luego al jugador correspondiente.",
+      "rapidArmed": "{action} activado — ahora toca a un jugador en cancha.",
+      "noStarters": "Aún no se ha elegido el once inicial.",
+      "subOff": "Sustituir",
+      "subPrompt": "{name} sale al minuto {minute}' — toca quién entra.",
+      "saveProgress": "Guardar avance",
+      "publish": "Publicar resultado",
+      "publishConfirmTitle": "¿Publicar el resultado final?",
+      "publishConfirmBody": "Los minutos se congelan al final y el partido se cierra para poder finalizar la jornada. Podrás reabrirlo después.",
+      "published": "Resultado publicado.",
+      "reopen": "Reabrir partido",
+      "reopened": "Partido reabierto para editar.",
+      "cancel": "Cancelar",
+      "actions": {
+        "goals": "Gol",
+        "assists": "Asistencia",
+        "saves": "Atajada",
+        "yellowCards": "Amarilla",
+        "redCards": "Roja",
+        "penaltiesSaved": "Penal atajado",
+        "penaltiesMissed": "Penal fallado",
+        "ownGoals": "Autogol"
+      },
+      "undo": "Deshacer"
     },
     "settings": {
       "groups": {

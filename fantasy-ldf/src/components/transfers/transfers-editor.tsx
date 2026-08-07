@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { ArrowLeftRight, RotateCcw, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BottomSheetContent } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { PitchView } from "@/components/pitch/pitch-view";
-import { PlayerChip, ClubBadge } from "@/components/pitch/player-chip";
+import { PlayerChip } from "@/components/pitch/player-chip";
 import { MarketSheet, type MarketCandidate } from "./market-sheet";
+import type { ScoringRuleRow } from "@/lib/game/scoring";
+import type { GameweekStatLines } from "@/lib/game/queries";
+import { makeHistoryBuilder } from "@/lib/game/player-history";
+import { PlayerModal } from "@/components/team/player-modal";
 import { ReviewSheet } from "./review-sheet";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
@@ -42,6 +44,9 @@ type TransfersEditorProps = {
   preSeason: boolean;
   locked: boolean;
   opponents: Record<string, OpponentInfo>;
+  /** Per-gameweek stats, so the player modal can step through the season. */
+  statsByGameweek?: GameweekStatLines[];
+  rules?: ScoringRuleRow[];
 };
 
 export function TransfersEditor({
@@ -54,12 +59,15 @@ export function TransfersEditor({
   preSeason,
   locked,
   opponents,
+  statsByGameweek,
+  rules,
 }: TransfersEditorProps) {
   const t = useTranslations("transfers");
   const tTeam = useTranslations("team");
   const router = useRouter();
 
   const [pairs, setPairs] = useState<TransferPair[]>([]);
+  const buildHistory = useMemo(() => makeHistoryBuilder(rules), [rules]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [serverError, setServerError] = useState<string>();
@@ -149,6 +157,11 @@ export function TransfersEditor({
         }),
       }));
   }, [selected, allPlayers, displayIds, outIds, pairs, squad, byId, bank, settings]);
+
+  function historyFor(player: MarketPlayer) {
+    if (!buildHistory || !statsByGameweek) return undefined;
+    return buildHistory(player.id, player.position, statsByGameweek);
+  }
 
   function handlePick(inId: string) {
     if (!selectedId) return;
@@ -263,57 +276,44 @@ export function TransfersEditor({
         </div>
       )}
 
-      {/* Player action sheet */}
-      <Dialog
+      {/* Squad player: the same modal as the team page, with the transfer
+          action in place of the lineup controls. */}
+      <PlayerModal
+        player={selected ?? null}
         open={sheet === "player" && selected != null}
         onOpenChange={(open) => {
           if (!open) clearSelection();
         }}
-      >
-        <BottomSheetContent>
-          {selected && (
-            <div className="flex flex-col gap-4 p-4 pt-6">
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <ClubBadge player={selected} className="size-9 text-[10px]" />
-                  <div className="min-w-0">
-                    <DialogTitle className="truncate text-lg">
-                      {selected.firstName} {selected.lastName}
-                    </DialogTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {selected.clubName} · {formatMoney(selected.price)}
-                      {fixtureLabel(selected)
-                        ? ` · ${fixtureLabel(selected)}`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              {inIds.has(selected.id) ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleUndo}
-                  className="h-12 w-full cursor-pointer font-semibold"
-                >
-                  <Undo2 className="size-4" aria-hidden />
-                  {t("undo")}
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={() => setSheet("market")}
-                  className="h-12 w-full cursor-pointer font-semibold"
-                >
-                  <ArrowLeftRight className="size-4" aria-hidden />
-                  {t("transferOut")}
-                </Button>
-              )}
-            </div>
-          )}
-        </BottomSheetContent>
-      </Dialog>
+        isStarter={false}
+        isCaptain={false}
+        isVice={false}
+        fixtureLabel={selected ? fixtureLabel(selected) : undefined}
+        canEdit={false}
+        history={selected ? historyFor(selected) : undefined}
+        actions={
+          selected &&
+          (inIds.has(selected.id) ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleUndo}
+              className="h-12 w-full cursor-pointer font-semibold"
+            >
+              <Undo2 className="size-4" aria-hidden />
+              {t("undo")}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => setSheet("market")}
+              className="h-12 w-full cursor-pointer font-semibold"
+            >
+              <ArrowLeftRight className="size-4" aria-hidden />
+              {t("transferOut")}
+            </Button>
+          ))
+        }
+      />
 
       <MarketSheet
         open={sheet === "market" && selected != null}
@@ -326,6 +326,8 @@ export function TransfersEditor({
         candidates={candidates}
         fixtureLabel={fixtureLabel}
         onPick={handlePick}
+        statsByGameweek={statsByGameweek}
+        rules={rules}
       />
 
       <ReviewSheet

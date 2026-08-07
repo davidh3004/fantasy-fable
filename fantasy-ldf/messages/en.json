@@ -139,6 +139,11 @@
       "lineup_invalid": "The lineup is not valid. Check your eleven and your bench.",
       "captain_invalid": "Pick a distinct captain and vice from your starting eleven.",
       "unknown": "Something went wrong. Try again."
+    },
+    "created": {
+      "title": "Your team is ready!",
+      "body": "You're all set. Taking you to your dashboard...",
+      "redirecting": "Redirecting to your dashboard"
     }
   },
   "positions": {
@@ -211,7 +216,8 @@
       "blocked": {
         "budget": "No funds",
         "club": "Club limit"
-      }
+      },
+      "info": "Player info for {name}"
     },
     "review": {
       "title": "Review transfers",
@@ -253,7 +259,8 @@
     "title": "Rival's team",
     "back": "Back",
     "hidden": "This team becomes visible once the first gameweek starts.",
-    "noLineup": "This team had no lineup for that gameweek."
+    "noLineup": "This team had no lineup for that gameweek.",
+    "gameweekPoints": "GW {points} pts"
   },
   "leagues": {
     "title": "Leagues",
@@ -351,7 +358,26 @@
       "captain_invalid": "Captain and vice must be different starters.",
       "no_team": "You don't have a team yet.",
       "unknown": "Something went wrong. Try again."
-    }
+    },
+    "ptsLabel": "pts",
+    "noLineup": "You didn't have a team for this gameweek.",
+    "breakdown": {
+      "minutes": "Minutes played",
+      "goals": "Goals",
+      "assists": "Assists",
+      "cleanSheet": "Clean sheet",
+      "saves": "Saves",
+      "penaltiesSaved": "Penalties saved",
+      "penaltiesMissed": "Penalties missed",
+      "goalsConceded": "Goals conceded",
+      "yellowCards": "Yellow cards",
+      "redCards": "Red cards",
+      "ownGoals": "Own goals",
+      "bonus": "Bonus",
+      "didNotPlay": "Hasn't played in this gameweek.",
+      "noMatch": "No match"
+    },
+    "versus": "vs {opp}"
   },
   "comingSoon": {
     "title": "Under construction",
@@ -399,7 +425,10 @@
         "not_locked": "The gameweek hasn't closed yet. Wait for the deadline.",
         "fixtures_pending": "Some fixtures are missing results. Enter them all first.",
         "already_finished": "The gameweek was already finalized.",
-        "unknown": "Something went wrong. Try again."
+        "unknown": "Something went wrong. Try again.",
+        "gameweek_finished": "The gameweek is already finalized and can't be deleted.",
+        "not_finished": "The gameweek isn't finalized, so there's nothing to undo.",
+        "later_finalized": "Undo the later finalized gameweeks first — unwinding out of order would corrupt the totals."
       }
     },
     "scoring": {
@@ -483,7 +512,13 @@
       "home": "Home",
       "away": "Away",
       "kickoff": "Kickoff",
-      "finished": "FT"
+      "finished": "FT",
+      "deleteCascade": "This also removes the saved lineups, transfers and chips for this gameweek.",
+      "deleteFinished": "This gameweek is already finalized — its points are counted in the standings and it can't be deleted.",
+      "unfinalize": "Undo finalize",
+      "unfinalizeShort": "Undo",
+      "unfinalizeConfirmTitle": "Undo finalize for gameweek {number}?",
+      "unfinalizeConfirmBody": "Points are taken back off every team's total, the per-player snapshots are cleared and ranks recalculated, so you can fix results and finalize again. Lineups already rolled forward to the next gameweek are kept. Each team also gives back one free transfer — a team already at the cap loses one it never gained."
     },
     "results": {
       "intro": "Pick a fixture to enter the result and player stats.",
@@ -507,7 +542,8 @@
         "penaltiesMissed": "PkM",
         "yellowCards": "YC",
         "redCards": "RC",
-        "ownGoals": "OG"
+        "ownGoals": "OG",
+        "points": "Pts"
       },
       "bonusTitle": "Bonus points",
       "bonusHint": "Pick the 3 best players of the match (3, 2 and 1 extra points).",
@@ -519,7 +555,42 @@
         "forbidden": "You don't have admin permissions.",
         "validation": "Check the score and stats.",
         "unknown": "Something went wrong. Try again."
-      }
+      },
+      "tabs": {
+        "lineups": "Lineups",
+        "live": "Live",
+        "all": "All stats"
+      },
+      "clock": "Match minute",
+      "clockHint": "Minutes played are derived from the lineup and substitutions against this clock. Sync it to real time or jump to full time.",
+      "syncClock": "Sync",
+      "fullTime": "Full time",
+      "lineupsHint": "Pick each team's starting eleven. Only these players appear in the Live tab, and their minutes run from kick-off until they're subbed off.",
+      "rapidTitle": "Quick actions",
+      "rapidHint": "Tap an action, then tap the player it belongs to.",
+      "rapidArmed": "{action} armed — now tap a player on the pitch.",
+      "noStarters": "No starting eleven picked yet.",
+      "subOff": "Substitute off",
+      "subPrompt": "{name} comes off at {minute}' — tap who comes on.",
+      "saveProgress": "Save progress",
+      "publish": "Publish result",
+      "publishConfirmTitle": "Publish the final result?",
+      "publishConfirmBody": "Minutes are frozen at full time and the match closes so the gameweek can be finalized. You can reopen it afterwards.",
+      "published": "Result published.",
+      "reopen": "Reopen match",
+      "reopened": "Match reopened for edits.",
+      "cancel": "Cancel",
+      "actions": {
+        "goals": "Goal",
+        "assists": "Assist",
+        "saves": "Save",
+        "yellowCards": "Yellow",
+        "redCards": "Red",
+        "penaltiesSaved": "Pen saved",
+        "penaltiesMissed": "Pen missed",
+        "ownGoals": "Own goal"
+      },
+      "undo": "Undo"
     },
     "settings": {
       "groups": {

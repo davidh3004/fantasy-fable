@@ -10,6 +10,7 @@ import {
   getActiveSeasonContext,
   getFixturesForGameweek,
 } from "@/lib/game/queries";
+import { effectiveFixtureStatus } from "@/lib/game/status";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("admin.nav");
@@ -18,10 +19,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AdminResultsPage() {
   const { season } = await getActiveSeasonContext();
-  const [t, locale] = await Promise.all([
+  const [t, tTeam, locale] = await Promise.all([
     getTranslations("admin.results"),
+    getTranslations("team"),
     getLocale(),
   ]);
+  const now = new Date();
 
   const gameweekRows = await db
     .select()
@@ -65,15 +68,30 @@ export default async function AdminResultsPage() {
                       {formatKickoff(fixture.kickoff, locale)}
                     </span>
                   </span>
-                  {fixture.status === "finished" ? (
-                    <span className="rounded-md bg-emerald-400/15 px-2 py-0.5 text-xs text-emerald-300">
-                      {t("entered")}
-                    </span>
-                  ) : (
-                    <span className="rounded-md bg-yellow-400/15 px-2 py-0.5 text-xs text-yellow-300">
-                      {t("pendingEntry")}
-                    </span>
-                  )}
+                  {(() => {
+                    // Derived so a kicked-off match reads LIVE without anyone
+                    // having to move its status by hand.
+                    const status = effectiveFixtureStatus(fixture, now);
+                    if (status === "finished") {
+                      return (
+                        <span className="rounded-md bg-emerald-400/15 px-2 py-0.5 text-xs text-emerald-300">
+                          {t("entered")}
+                        </span>
+                      );
+                    }
+                    if (status === "live") {
+                      return (
+                        <span className="rounded-md bg-destructive px-2 py-0.5 text-xs font-semibold uppercase text-white">
+                          {tTeam("live")}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="rounded-md bg-yellow-400/15 px-2 py-0.5 text-xs text-yellow-300">
+                        {t("pendingEntry")}
+                      </span>
+                    );
+                  })()}
                   <ChevronRight
                     className="size-4 text-muted-foreground"
                     aria-hidden

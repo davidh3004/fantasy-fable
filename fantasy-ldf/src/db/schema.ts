@@ -176,6 +176,11 @@ export const playerMatchStats = pgTable(
     ownGoals: smallint("own_goals").notNull().default(0),
     bonusPoints: smallint("bonus_points").notNull().default(0), // 0–3, admin-picked
     points: smallint("points").notNull().default(0), // computed snapshot
+    // Live-console bookkeeping. `minutes` above stays the value the scoring
+    // engine reads; it's recomputed from these on every save.
+    started: boolean("started").notNull().default(false),
+    onMinute: smallint("on_minute"), // entered the pitch (0 for starters)
+    offMinute: smallint("off_minute"), // left the pitch; null = still on
   },
   (t) => [
     uniqueIndex("player_match_stats_fixture_player_idx").on(

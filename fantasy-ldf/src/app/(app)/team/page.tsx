@@ -15,14 +15,23 @@ import {
   getActiveSeasonContext,
   getFixturesForGameweek,
   getGameweekPlayerPoints,
+  getSeasonStatLinesByGameweek,
   getLineupPicks,
   getNextGameweek,
+  getSeasonGameweeks,
   getSquadPlayers,
-  getTeamLineupGameweeks,
   getUserFantasyTeam,
   toSquadSettings,
-  type TeamGameweek,
 } from "@/lib/game/queries";
+import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
+import { effectiveFixtureStatus } from "@/lib/game/status";
+import { db } from "@/db";
+import { scoringRules } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import {
+  buildViewableGameweeks,
+  pickDefaultGameweek,
+} from "@/lib/game/team-gameweeks";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("nav");
@@ -40,11 +49,10 @@ export default async function TeamPage({
   const { gw } = await searchParams;
   const { season, settings } = await getActiveSeasonContext();
 
-  const [team, nextGameweek, t, tNav, locale] = await Promise.all([
+  const [team, nextGameweek, t, locale] = await Promise.all([
     getUserFantasyTeam(user.id, season.id),
     getNextGameweek(season.id),
     getTranslations("team"),
-    getTranslations("nav"),
     getLocale(),
   ]);
   if (!team) redirect("/onboarding");
@@ -52,34 +60,25 @@ export default async function TeamPage({
   const squad = await getSquadPlayers(team.id);
   const squadSettings = toSquadSettings(settings);
 
-  // Viewable gameweeks: those with a saved lineup, plus the upcoming editable
-  // one (which may not have a lineup row yet for brand-new teams).
-  const lineupGameweeks = await getTeamLineupGameweeks(team.id);
-  const viewable: TeamGameweek[] = [...lineupGameweeks];
-  if (nextGameweek && !viewable.some((g) => g.id === nextGameweek.id)) {
-    viewable.push({
-      id: nextGameweek.id,
-      number: nextGameweek.number,
-      status: nextGameweek.status,
-      deadline: nextGameweek.deadline,
-    });
-    viewable.sort((a, b) => a.number - b.number);
-  }
+  const now = new Date();
 
-  const defaultNumber = nextGameweek?.number ?? viewable.at(-1)?.number;
+  // The range spans the season's started gameweeks, not just the ones this
+  // team has a lineup row for — otherwise everything before the team was
+  // created is unreachable and the nav arrows dead-end.
+  const seasonGameweeks = await getSeasonGameweeks(season.id);
+  const viewable = buildViewableGameweeks(seasonGameweeks, nextGameweek, now);
+
   const requested = Number(gw);
-  const selectedNumber = viewable.some((g) => g.number === requested)
-    ? requested
-    : defaultNumber;
-  const selected = viewable.find((g) => g.number === selectedNumber) ?? null;
+  const selected =
+    viewable.find((g) => g.number === requested) ??
+    pickDefaultGameweek(viewable, nextGameweek, now);
 
   // No gameweeks at all: read-only default lineup.
   if (!selected) {
     const initial = buildInitialLineup(squad);
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        <h1 className="font-heading text-2xl">{tNav("team")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{team.name}</p>
+        <h1 className="truncate font-heading text-2xl">{team.name}</h1>
         <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-muted-foreground">
           <CalendarOff className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>{t("noGameweek")}</span>
@@ -103,7 +102,6 @@ export default async function TeamPage({
     );
   }
 
-  const now = new Date();
   const isFinalized = selected.status === "finished";
   const isEditable =
     nextGameweek != null &&
@@ -118,14 +116,43 @@ export default async function TeamPage({
 
   const opponents: Record<string, OpponentInfo> = {};
   const liveClubs = new Set<string>();
+  // Clubs whose match is in play *right now* — these get the gold treatment.
+  const playingClubs = new Set<string>();
   for (const fixture of gameweekFixtures) {
     opponents[fixture.homeClubId] = { opp: fixture.awayShort, home: true };
     opponents[fixture.awayClubId] = { opp: fixture.homeShort, home: false };
-    if (fixture.status === "live" || fixture.status === "finished") {
+    // Derived, so a match that has kicked off counts as live even if nobody
+    // moved its status in the admin panel.
+    const status = effectiveFixtureStatus(fixture, now);
+    if (status === "live" || status === "finished") {
       liveClubs.add(fixture.homeClubId);
       liveClubs.add(fixture.awayClubId);
     }
+    if (status === "live") {
+      playingClubs.add(fixture.homeClubId);
+      playingClubs.add(fixture.awayClubId);
+    }
   }
+  const livePlayerIds = squad
+    .filter((player) => playingClubs.has(player.clubId))
+    .map((player) => player.id);
+
+  // Stat lines + rules power the modal's points breakdown. Only worth
+  // fetching once a gameweek is under way — there's nothing to explain before.
+  const hasStarted = isFinalized || isLive;
+  const [statsByGameweek, ruleRows] = hasStarted
+    ? await Promise.all([
+        getSeasonStatLinesByGameweek(season.id),
+        db
+          .select({
+            eventKey: scoringRules.eventKey,
+            position: scoringRules.position,
+            points: scoringRules.points,
+          })
+          .from(scoringRules)
+          .where(eq(scoringRules.seasonId, season.id)),
+      ])
+    : [null, null];
 
   // Points to show under each player.
   const pointsByPlayer: Record<string, number> = {};
@@ -143,6 +170,12 @@ export default async function TeamPage({
       }
     }
   }
+
+  // A started gameweek with no picks means the team didn't exist yet. Say so
+  // rather than painting today's squad onto it as if it had been the lineup —
+  // the auto-built fallback below is only for a brand-new team whose upcoming
+  // lineup row hasn't been written yet.
+  const hadNoTeam = picks.length === 0 && !isEditable;
 
   // Build the lineup state for the selected gameweek.
   let lineup: LineupState;
@@ -181,40 +214,69 @@ export default async function TeamPage({
         ? t("finishedSub")
         : formatDeadline(selected.deadline, locale);
 
+  const gameweekPoints = await getTeamGameweekPoints(
+    team.id,
+    selected,
+    squadSettings
+  );
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mb-4">
-        <h1 className="font-heading text-2xl">{tNav("team")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{team.name}</p>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <h1 className="min-w-0 truncate font-heading text-2xl">{team.name}</h1>
+        {gameweekPoints != null && (
+          <p className="shrink-0 text-right">
+            <span className="font-heading text-2xl tabular-nums">
+              {gameweekPoints}
+            </span>{" "}
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              {t("ptsLabel")}
+            </span>
+          </p>
+        )}
       </div>
 
       <GameweekNav
         number={selected.number}
         statusLabel={statusLabel}
         subLabel={subLabel}
-        prevNumber={
-          selectedIndex > 0 ? viewable[selectedIndex - 1].number : null
+        isLive={isLive}
+        prevHref={
+          selectedIndex > 0
+            ? `/team?gw=${viewable[selectedIndex - 1].number}`
+            : null
         }
-        nextNumber={
+        nextHref={
           selectedIndex < viewable.length - 1
-            ? viewable[selectedIndex + 1].number
+            ? `/team?gw=${viewable[selectedIndex + 1].number}`
             : null
         }
       />
 
-      <div className="mt-5">
-        <LineupEditor
-          key={selected.id}
-          players={squad}
-          settings={squadSettings}
-          initialLineup={lineup}
-          initialCaptainId={captainId}
-          initialViceId={viceId}
-          locked={!isEditable}
-          opponents={opponents}
-          pointsByPlayer={pointsByPlayer}
-        />
-      </div>
+      {hadNoTeam ? (
+        <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-muted-foreground">
+          <CalendarOff className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>{t("noLineup")}</span>
+        </div>
+      ) : (
+        <div className="mt-5">
+          <LineupEditor
+            key={selected.id}
+            players={squad}
+            settings={squadSettings}
+            initialLineup={lineup}
+            initialCaptainId={captainId}
+            initialViceId={viceId}
+            locked={!isEditable}
+            opponents={opponents}
+            pointsByPlayer={pointsByPlayer}
+            livePlayerIds={livePlayerIds}
+            statsByGameweek={statsByGameweek ?? undefined}
+            rules={ruleRows ?? undefined}
+            viewingGameweekId={selected.id}
+          />
+        </div>
+      )}
     </main>
   );
 }

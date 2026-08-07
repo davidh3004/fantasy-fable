@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PitchView } from "@/components/pitch/pitch-view";
 import { PlayerChip } from "@/components/pitch/player-chip";
 import { POSITION_ORDER, type Position } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
 import type { OpponentInfo } from "@/components/team/lineup-editor";
+import { PlayerModal } from "@/components/team/player-modal";
+import type { ScoringRuleRow } from "@/lib/game/scoring";
+import type { GameweekStatLines } from "@/lib/game/queries";
+import { makeHistoryBuilder } from "@/lib/game/player-history";
 
 type ReadonlyPitchProps = {
   players: MarketPlayer[];
@@ -16,6 +20,11 @@ type ReadonlyPitchProps = {
   viceId: string;
   opponents: Record<string, OpponentInfo>;
   pointsByPlayer: Record<string, number>;
+  /** Per-gameweek stat lines, so the modal can step through the season. */
+  statsByGameweek?: GameweekStatLines[];
+  rules?: ScoringRuleRow[];
+  /** Gameweek the modal opens on. */
+  viewingGameweekId?: string;
 };
 
 export function ReadonlyPitch({
@@ -26,14 +35,29 @@ export function ReadonlyPitch({
   viceId,
   opponents,
   pointsByPlayer,
+  statsByGameweek,
+  rules,
+  viewingGameweekId,
 }: ReadonlyPitchProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positionsShort");
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const byId = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
     [players]
   );
+
+  const buildHistory = useMemo(() => makeHistoryBuilder(rules), [rules]);
+
+  const selected = selectedId ? (byId.get(selectedId) ?? null) : null;
+
+  /** Same record as your own team — this squad just isn't editable. */
+  function historyFor(player: MarketPlayer) {
+    if (!buildHistory || !statsByGameweek) return undefined;
+    return buildHistory(player.id, player.position, statsByGameweek);
+  }
 
   const groups = useMemo(() => {
     const result: Record<Position, MarketPlayer[]> = {
@@ -75,7 +99,7 @@ export function ReadonlyPitch({
         captain={player.id === captainId}
         vice={player.id === viceId}
         benchOrder={benchOrder}
-        disabled
+        onClick={() => setSelectedId(player.id)}
       />
     );
   }
@@ -96,6 +120,28 @@ export function ReadonlyPitch({
           )}
         </div>
       </section>
+
+      <PlayerModal
+        player={selected}
+        open={selected != null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedId(null);
+        }}
+        isStarter={selectedId ? starterIds.includes(selectedId) : false}
+        isCaptain={selectedId === captainId}
+        isVice={selectedId === viceId}
+        fixtureLabel={
+          selected && opponents[selected.clubId]
+            ? t(
+                opponents[selected.clubId].home ? "fixtureHome" : "fixtureAway",
+                { opp: opponents[selected.clubId].opp }
+              )
+            : undefined
+        }
+        canEdit={false}
+        history={selected ? historyFor(selected) : undefined}
+        defaultGameweekId={viewingGameweekId}
+      />
     </div>
   );
 }

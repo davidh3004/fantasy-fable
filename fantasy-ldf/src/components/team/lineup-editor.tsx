@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Loader2, RotateCcw, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -14,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AuthAlert } from "@/components/auth/auth-alert";
 import { PitchView } from "@/components/pitch/pitch-view";
 import { PlayerChip } from "@/components/pitch/player-chip";
+import { useFlip } from "@/components/pitch/use-flip";
 import { PlayerModal } from "@/components/team/player-modal";
 import { cn } from "@/lib/utils";
 import { saveLineup } from "@/app/(app)/team/actions";
@@ -24,6 +19,9 @@ import {
   type SquadSettings,
 } from "@/lib/game/squad";
 import type { MarketPlayer } from "@/lib/game/queries";
+import type { ScoringRuleRow } from "@/lib/game/scoring";
+import type { GameweekStatLines } from "@/lib/game/queries";
+import { makeHistoryBuilder } from "@/lib/game/player-history";
 
 export type OpponentInfo = { opp: string; home: boolean };
 
@@ -38,6 +36,14 @@ type LineupEditorProps = {
   opponents: Record<string, OpponentInfo>;
   /** playerId → points, once the gameweek has been scored. */
   pointsByPlayer: Record<string, number>;
+  /** playerIds whose match is in play right now (gold treatment). */
+  livePlayerIds?: string[];
+  /** Per-gameweek stat lines, so the modal can step through the season. */
+  statsByGameweek?: GameweekStatLines[];
+  /** Season scoring rules, so the breakdown matches the engine exactly. */
+  rules?: ScoringRuleRow[];
+  /** Gameweek the modal opens on — the one being viewed on the page. */
+  viewingGameweekId?: string;
 };
 
 export function LineupEditor({
@@ -49,9 +55,17 @@ export function LineupEditor({
   locked,
   opponents,
   pointsByPlayer,
+  livePlayerIds,
+  statsByGameweek,
+  rules,
+  viewingGameweekId,
 }: LineupEditorProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positionsShort");
+  const livePlayers = useMemo(
+    () => new Set(livePlayerIds ?? []),
+    [livePlayerIds]
+  );
 
   const [lineup, setLineup] = useState(initialLineup);
   const [captainId, setCaptainId] = useState(initialCaptainId);
@@ -63,15 +77,15 @@ export function LineupEditor({
   const [dirty, setDirty] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // FLIP animation bookkeeping: chip elements by player id + their rects
-  // captured right before a lineup change.
-  const chipRefs = useRef(new Map<string, HTMLButtonElement>());
-  const prevRects = useRef<Map<string, DOMRect> | null>(null);
+  // Chips glide to their new slots after a swap.
+  const { register, snapshot } = useFlip(lineup);
 
   const byId = useMemo(
     () => new Map(players.map((p) => [p.id, p])),
     [players]
   );
+
+  const buildHistory = useMemo(() => makeHistoryBuilder(rules), [rules]);
 
   const groups = useMemo(() => {
     const result: Record<Position, MarketPlayer[]> = {
@@ -89,42 +103,6 @@ export function LineupEditor({
     }
     return result;
   }, [lineup.starterIds, byId]);
-
-  useLayoutEffect(() => {
-    const prev = prevRects.current;
-    prevRects.current = null;
-    if (!prev) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    for (const [id, el] of chipRefs.current) {
-      const before = prev.get(id);
-      if (!before) continue;
-      const after = el.getBoundingClientRect();
-      const dx = before.left - after.left;
-      const dy = before.top - after.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-      el.animate(
-        [
-          { transform: `translate(${dx}px, ${dy}px)`, zIndex: "10" },
-          { transform: "translate(0, 0)", zIndex: "10" },
-        ],
-        { duration: 350, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }
-      );
-    }
-  }, [lineup]);
-
-  function snapshotRects() {
-    prevRects.current = new Map(
-      [...chipRefs.current].map(([id, el]) => [id, el.getBoundingClientRect()])
-    );
-  }
-
-  function registerChip(id: string) {
-    return (el: HTMLButtonElement | null) => {
-      if (el) chipRefs.current.set(id, el);
-      else chipRefs.current.delete(id);
-    };
-  }
 
   const benchPlayers = lineup.benchIds.map((id) => byId.get(id)!);
   const selected = selectedId ? byId.get(selectedId) : null;
@@ -153,17 +131,20 @@ export function LineupEditor({
   }
 
   function handleTap(id: string) {
-    if (locked) return;
     setMessage(null);
 
+    // The modal is readable in every state — only its actions are gated, so a
+    // locked gameweek can still be inspected player by player.
     if (!swapMode) {
       setSelectedId(id);
       setModalOpen(true);
       return;
     }
 
-    // Swap mode: selectedId is fixed, this tap picks the swap target.
-    if (id === selectedId) {
+    // Swap mode: selectedId is fixed, this tap picks the swap target. Only
+    // reachable from the modal's Switch button, which is hidden when locked —
+    // guarded anyway so the lock can't be bypassed.
+    if (locked || id === selectedId) {
       clearSelection();
       return;
     }
@@ -173,7 +154,25 @@ export function LineupEditor({
       return;
     }
     if (result.state) {
-      snapshotRects();
+      snapshot();
+      setLineup(result.state);
+      reconcileCaptaincy(result.state);
+      setDirty(true);
+    }
+    clearSelection();
+  }
+
+  /** Drag-and-drop swap: source card dropped onto the target card. */
+  function handleDragSwap(sourceId: string, targetId: string) {
+    if (locked) return;
+    setMessage(null);
+    const result = trySwap(lineup, sourceId, targetId, byId, settings);
+    if (result.error) {
+      setMessage(result.error);
+      return;
+    }
+    if (result.state) {
+      snapshot();
       setLineup(result.state);
       reconcileCaptaincy(result.state);
       setDirty(true);
@@ -195,7 +194,7 @@ export function LineupEditor({
   }
 
   function handleDiscard() {
-    snapshotRects();
+    snapshot();
     setLineup(initialLineup);
     setCaptainId(initialCaptainId);
     setViceId(initialViceId);
@@ -235,6 +234,16 @@ export function LineupEditor({
     return t(info.home ? "fixtureHome" : "fixtureAway", { opp: info.opp });
   }
 
+  /**
+   * The player's season record. Undefined before any gameweek has been played,
+   * so the modal omits the section entirely rather than claiming they didn't
+   * feature.
+   */
+  function historyFor(player: MarketPlayer) {
+    if (!buildHistory || !statsByGameweek) return undefined;
+    return buildHistory(player.id, player.position, statsByGameweek);
+  }
+
   function caption(player: MarketPlayer): string {
     const points = pointsByPlayer[player.id];
     if (points != null) return t("points", { points });
@@ -245,7 +254,7 @@ export function LineupEditor({
     return (
       <PlayerChip
         key={player.id}
-        ref={registerChip(player.id)}
+        ref={register(player.id)}
         player={player}
         caption={caption(player)}
         selected={selectedId === player.id}
@@ -253,8 +262,9 @@ export function LineupEditor({
         captain={player.id === captainId}
         vice={player.id === viceId}
         benchOrder={benchOrder}
-        disabled={locked}
+        live={livePlayers.has(player.id)}
         onClick={() => handleTap(player.id)}
+        onSwapWith={(targetId) => handleDragSwap(player.id, targetId)}
       />
     );
   }
@@ -344,7 +354,7 @@ export function LineupEditor({
 
       <PlayerModal
         player={selected ?? null}
-        open={modalOpen && !swapMode && !locked}
+        open={modalOpen && !swapMode}
         onOpenChange={(open) => {
           if (!open) clearSelection();
         }}
@@ -352,6 +362,9 @@ export function LineupEditor({
         isCaptain={selectedId === captainId}
         isVice={selectedId === viceId}
         fixtureLabel={selected ? fixtureLabel(selected) : undefined}
+        canEdit={!locked}
+        history={selected ? historyFor(selected) : undefined}
+        defaultGameweekId={viewingGameweekId}
         onSwitch={() => {
           setModalOpen(false);
           setSwapMode(true);

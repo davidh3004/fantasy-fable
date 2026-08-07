@@ -16,6 +16,7 @@ import {
   squadPicks,
 } from "@/db/schema";
 import type { SquadSettings } from "./squad";
+import type { StatLine } from "./scoring";
 
 type SeasonContext = {
   season: typeof seasons.$inferSelect;
@@ -242,27 +243,6 @@ export async function getFixturesForGameweek(
     .orderBy(asc(fixtures.kickoff));
 }
 
-/** Most recent lineup (by gameweek number) for a user's team this season. */
-export async function getLatestLineupForUser(userId: string, seasonId: string) {
-  const [row] = await db
-    .select({
-      points: gameweekLineups.points,
-      gameweekNumber: gameweeks.number,
-    })
-    .from(gameweekLineups)
-    .innerJoin(gameweeks, eq(gameweekLineups.gameweekId, gameweeks.id))
-    .innerJoin(
-      fantasyTeams,
-      eq(gameweekLineups.fantasyTeamId, fantasyTeams.id)
-    )
-    .where(
-      and(eq(fantasyTeams.userId, userId), eq(fantasyTeams.seasonId, seasonId))
-    )
-    .orderBy(desc(gameweeks.number))
-    .limit(1);
-  return row ?? null;
-}
-
 /** Fixtures of the next upcoming gameweek, one round-trip via subquery. */
 export async function getFixturesForNextGameweek(
   seasonId: string
@@ -363,6 +343,27 @@ export async function getLineupPicks(
       )
     )
     .orderBy(asc(lineupPicks.slot));
+}
+
+/** The saved lineup row for a team in one gameweek (points snapshot + hits). */
+export async function getLineupSummary(
+  fantasyTeamId: string,
+  gameweekId: string
+): Promise<{ points: number | null; transfersCost: number } | null> {
+  const [row] = await db
+    .select({
+      points: gameweekLineups.points,
+      transfersCost: gameweekLineups.transfersCost,
+    })
+    .from(gameweekLineups)
+    .where(
+      and(
+        eq(gameweekLineups.fantasyTeamId, fantasyTeamId),
+        eq(gameweekLineups.gameweekId, gameweekId)
+      )
+    )
+    .limit(1);
+  return row ?? null;
 }
 
 /** Most recent gameweek whose deadline has passed (live or finished). Null
@@ -568,24 +569,6 @@ export async function getFixtureStats(
     .orderBy(desc(playerMatchStats.points));
 }
 
-/** Gameweeks (ordered) for which a team has a saved lineup — the views the
- *  team-page navigator can toggle between. */
-export async function getTeamLineupGameweeks(
-  fantasyTeamId: string
-): Promise<TeamGameweek[]> {
-  return db
-    .select({
-      id: gameweeks.id,
-      number: gameweeks.number,
-      status: gameweeks.status,
-      deadline: gameweeks.deadline,
-    })
-    .from(gameweekLineups)
-    .innerJoin(gameweeks, eq(gameweekLineups.gameweekId, gameweeks.id))
-    .where(eq(gameweekLineups.fantasyTeamId, fantasyTeamId))
-    .orderBy(asc(gameweeks.number));
-}
-
 /** Raw per-player points (no captain multiplier) from a gameweek's match
  *  stats — used for live points while a gameweek is in play. */
 export async function getGameweekPlayerPoints(
@@ -620,6 +603,108 @@ export async function getGameweekPlayerStats(
   return new Map(
     rows.map((r) => [r.playerId, { points: r.points, minutes: r.minutes }])
   );
+}
+
+/**
+ * Full stat lines for a gameweek, summed across fixtures so double gameweeks
+ * add up. Feeds the player modal's points breakdown — `getGameweekPlayerStats`
+ * only carries the total, which can't explain *how* it was earned.
+ */
+export async function getGameweekStatLines(
+  gameweekId: string
+): Promise<Map<string, StatLine>> {
+  const rows = await db
+    .select({
+      playerId: playerMatchStats.playerId,
+      minutes: sql<number>`sum(${playerMatchStats.minutes})::int`,
+      goals: sql<number>`sum(${playerMatchStats.goals})::int`,
+      assists: sql<number>`sum(${playerMatchStats.assists})::int`,
+      saves: sql<number>`sum(${playerMatchStats.saves})::int`,
+      penaltiesSaved: sql<number>`sum(${playerMatchStats.penaltiesSaved})::int`,
+      penaltiesMissed: sql<number>`sum(${playerMatchStats.penaltiesMissed})::int`,
+      goalsConceded: sql<number>`sum(${playerMatchStats.goalsConceded})::int`,
+      yellowCards: sql<number>`sum(${playerMatchStats.yellowCards})::int`,
+      redCards: sql<number>`sum(${playerMatchStats.redCards})::int`,
+      ownGoals: sql<number>`sum(${playerMatchStats.ownGoals})::int`,
+      bonusPoints: sql<number>`sum(${playerMatchStats.bonusPoints})::int`,
+      // Any clean sheet across the gameweek's fixtures counts.
+      cleanSheet: sql<boolean>`bool_or(${playerMatchStats.cleanSheet})`,
+    })
+    .from(playerMatchStats)
+    .innerJoin(fixtures, eq(playerMatchStats.fixtureId, fixtures.id))
+    .where(eq(fixtures.gameweekId, gameweekId))
+    .groupBy(playerMatchStats.playerId);
+
+  return new Map(rows.map((r) => [r.playerId, r]));
+}
+
+export type GameweekStatLines = {
+  gameweekId: string;
+  number: number;
+  lines: Record<string, StatLine>;
+  /** playerId → who they faced, e.g. "RMA (F)". Doubles list both. */
+  opponents: Record<string, string>;
+};
+
+/**
+ * Stat lines for every started gameweek of a season, keyed by gameweek then
+ * player. Powers the player modal's gameweek stepper, so a player's record can
+ * be walked jornada by jornada without a round trip per step.
+ *
+ * Bounded by squad size × gameweeks played, which stays small.
+ */
+export async function getSeasonStatLinesByGameweek(
+  seasonId: string
+): Promise<GameweekStatLines[]> {
+  const homeClub = alias(clubs, "gw_home_club");
+  const awayClub = alias(clubs, "gw_away_club");
+
+  const rows = await db
+    .select({
+      gameweekId: gameweeks.id,
+      number: gameweeks.number,
+      playerId: playerMatchStats.playerId,
+      minutes: sql<number>`sum(${playerMatchStats.minutes})::int`,
+      goals: sql<number>`sum(${playerMatchStats.goals})::int`,
+      assists: sql<number>`sum(${playerMatchStats.assists})::int`,
+      saves: sql<number>`sum(${playerMatchStats.saves})::int`,
+      penaltiesSaved: sql<number>`sum(${playerMatchStats.penaltiesSaved})::int`,
+      penaltiesMissed: sql<number>`sum(${playerMatchStats.penaltiesMissed})::int`,
+      goalsConceded: sql<number>`sum(${playerMatchStats.goalsConceded})::int`,
+      yellowCards: sql<number>`sum(${playerMatchStats.yellowCards})::int`,
+      redCards: sql<number>`sum(${playerMatchStats.redCards})::int`,
+      ownGoals: sql<number>`sum(${playerMatchStats.ownGoals})::int`,
+      bonusPoints: sql<number>`sum(${playerMatchStats.bonusPoints})::int`,
+      cleanSheet: sql<boolean>`bool_or(${playerMatchStats.cleanSheet})`,
+      // Who they faced, from the player's own club's point of view. A double
+      // gameweek aggregates both, in kickoff order.
+      opponent: sql<string>`string_agg(
+        case when ${fixtures.homeClubId} = ${players.clubId}
+          then ${awayClub.shortName} else ${homeClub.shortName} end,
+        ', ' order by ${fixtures.kickoff}
+      )`,
+    })
+    .from(playerMatchStats)
+    .innerJoin(fixtures, eq(playerMatchStats.fixtureId, fixtures.id))
+    .innerJoin(gameweeks, eq(fixtures.gameweekId, gameweeks.id))
+    .innerJoin(players, eq(players.id, playerMatchStats.playerId))
+    .innerJoin(homeClub, eq(homeClub.id, fixtures.homeClubId))
+    .innerJoin(awayClub, eq(awayClub.id, fixtures.awayClubId))
+    .where(eq(gameweeks.seasonId, seasonId))
+    .groupBy(gameweeks.id, gameweeks.number, playerMatchStats.playerId)
+    .orderBy(asc(gameweeks.number));
+
+  const byGameweek = new Map<string, GameweekStatLines>();
+  for (const { gameweekId, number, playerId, opponent, ...stats } of rows) {
+    let entry = byGameweek.get(gameweekId);
+    if (!entry) {
+      entry = { gameweekId, number, lines: {}, opponents: {} };
+      byGameweek.set(gameweekId, entry);
+    }
+    entry.lines[playerId] = stats;
+    if (opponent) entry.opponents[playerId] = opponent;
+  }
+  return [...byGameweek.values()].sort((a, b) => a.number - b.number);
 }
 
 /** Next gameweek whose deadline hasn't passed. Null between last GW and season end. */
