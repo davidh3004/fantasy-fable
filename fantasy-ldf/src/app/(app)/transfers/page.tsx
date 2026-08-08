@@ -96,15 +96,18 @@ export default async function TransfersPage() {
           </p>
         </div>
         {nextGameweek && (
-          <p className="shrink-0 rounded-lg bg-card px-3 py-1.5 text-right text-xs text-muted-foreground">
-            {tTeam("gameweek", { number: nextGameweek.number })}
-            {" · "}
-            <span className="capitalize">
+          /* Two lines: gameweek on top, deadline beneath. On one line it ran
+             long enough to crowd the title on a phone. */
+          <div className="shrink-0 rounded-lg bg-card px-3 py-1.5 text-right">
+            <p className="text-xs font-medium">
+              {tTeam("gameweek", { number: nextGameweek.number })}
+            </p>
+            <p className="mt-0.5 text-[11px] capitalize text-muted-foreground">
               {tTeam("deadline", {
                 date: formatDeadline(nextGameweek.deadline, locale),
               })}
-            </span>
-          </p>
+            </p>
+          </div>
         )}
       </div>
 
