@@ -48,6 +48,7 @@
     "update": {
       "title": "New password",
       "subtitle": "Type your new password",
+      "currentPassword": "Current password",
       "password": "New password",
       "confirmPassword": "Confirm password",
       "submit": "Update password"
@@ -59,6 +60,9 @@
       "user_already_exists": "An account with this email already exists.",
       "weak_password": "Password must be at least 8 characters.",
       "passwords_mismatch": "Passwords don't match.",
+      "current_password_required": "Type your current password.",
+      "current_password_wrong": "That current password isn't right.",
+      "password_unchanged": "The new password must differ from the current one.",
       "over_request_rate_limit": "Too many attempts. Wait a moment.",
       "oauth": "Couldn't connect with Google. Try again.",
       "confirm": "The link is invalid or expired.",

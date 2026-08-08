@@ -9,7 +9,12 @@ import { Label } from "@/components/ui/label";
 import { AuthAlert } from "./auth-alert";
 import { PasswordInput } from "./password-input";
 
-export function UpdatePasswordForm() {
+export function UpdatePasswordForm({
+  needsCurrentPassword,
+}: {
+  /** False in the recovery flow, where the old password is what's forgotten. */
+  needsCurrentPassword: boolean;
+}) {
   const t = useTranslations("auth.update");
   const tErrors = useTranslations("auth.errors");
   const [state, formAction, isPending] = useActionState(updatePassword, {});
@@ -19,6 +24,18 @@ export function UpdatePasswordForm() {
       {state.error && <AuthAlert variant="error" message={tErrors(state.error)} />}
 
       <form action={formAction} className="flex flex-col gap-4">
+        {needsCurrentPassword && (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="currentPassword">{t("currentPassword")}</Label>
+            <PasswordInput
+              id="currentPassword"
+              name="currentPassword"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+        )}
+
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">{t("password")}</Label>
           <PasswordInput

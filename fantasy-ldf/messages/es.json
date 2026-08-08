@@ -48,6 +48,7 @@
     "update": {
       "title": "Nueva contraseña",
       "subtitle": "Escribe tu nueva contraseña",
+      "currentPassword": "Contraseña actual",
       "password": "Nueva contraseña",
       "confirmPassword": "Confirmar contraseña",
       "submit": "Actualizar contraseña"
@@ -59,6 +60,9 @@
       "user_already_exists": "Ya existe una cuenta con este correo.",
       "weak_password": "La contraseña debe tener al menos 8 caracteres.",
       "passwords_mismatch": "Las contraseñas no coinciden.",
+      "current_password_required": "Escribe tu contraseña actual.",
+      "current_password_wrong": "La contraseña actual no es correcta.",
+      "password_unchanged": "La nueva contraseña debe ser distinta de la actual.",
       "over_request_rate_limit": "Demasiados intentos. Espera un momento.",
       "oauth": "No se pudo conectar con Google. Intenta de nuevo.",
       "confirm": "El enlace no es válido o expiró.",

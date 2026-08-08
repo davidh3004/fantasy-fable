@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getPasswordChangeContext } from "@/lib/auth/password-change";
 
 export type AuthState = {
   error?: string;
@@ -109,21 +110,61 @@ export async function resetPassword(
   return { success: "sent" };
 }
 
+/**
+ * Changing a password requires proving you know the current one — otherwise a
+ * stolen session cookie converts into permanent ownership of the account, and
+ * the real owner cannot take it back. The exception is a recovery session,
+ * where not knowing the password is the whole reason for being here.
+ *
+ * On success every other session is revoked, so a thief holding a copy of the
+ * session elsewhere is thrown out by the same act that changes the password.
+ */
 export async function updatePassword(
   _prev: AuthState,
   formData: FormData
 ): Promise<AuthState> {
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
+  const currentPassword = String(formData.get("currentPassword") ?? "");
 
   if (!password) return { error: "missing_fields" };
   if (password.length < 8) return { error: "weak_password" };
   if (password !== confirmPassword) return { error: "passwords_mismatch" };
 
+  const context = await getPasswordChangeContext();
+  if (!context) redirect("/login");
+
   const supabase = await createClient();
+
+  if (context.needsCurrentPassword) {
+    if (!currentPassword) return { error: "current_password_required" };
+    if (currentPassword === password) return { error: "password_unchanged" };
+
+    const email = context.user.email;
+    if (!email) return { error: "unknown" };
+
+    // The only way to check a password with Supabase is to use it. On success
+    // this mints an extra session, which the revocation below then clears.
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+    if (reauthError) {
+      return {
+        error:
+          reauthError.code === "over_request_rate_limit"
+            ? "over_request_rate_limit"
+            : "current_password_wrong",
+      };
+    }
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) return { error: mapAuthError(error.code) };
+
+  // Leaves this session signed in and drops every other one.
+  await supabase.auth.signOut({ scope: "others" });
 
   redirect("/home");
 }
