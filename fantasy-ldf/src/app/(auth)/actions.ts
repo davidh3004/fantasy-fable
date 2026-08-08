@@ -1,8 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { SITE_URL } from "@/lib/config";
 import { getPasswordChangeContext } from "@/lib/auth/password-change";
 
 export type AuthState = {
@@ -30,10 +30,6 @@ const KNOWN_ERROR_CODES = new Set([
 
 function mapAuthError(code: string | undefined): string {
   return code && KNOWN_ERROR_CODES.has(code) ? code : "unknown";
-}
-
-async function getOrigin() {
-  return (await headers()).get("origin") ?? "";
 }
 
 export async function login(
@@ -79,7 +75,7 @@ export async function register(
     password,
     options: {
       data: { display_name: displayName },
-      emailRedirectTo: `${await getOrigin()}/auth/callback`,
+      emailRedirectTo: `${SITE_URL}/auth/callback`,
     },
   });
 
@@ -102,7 +98,7 @@ export async function resetPassword(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${await getOrigin()}/auth/callback?next=/update-password`,
+    redirectTo: `${SITE_URL}/auth/callback?next=/update-password`,
   });
 
   if (error) return { error: mapAuthError(error.code) };
