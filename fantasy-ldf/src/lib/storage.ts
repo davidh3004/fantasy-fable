@@ -1,11 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB
+
+/**
+ * SVG is deliberately absent. An SVG is a document, not just an image: it can
+ * carry <script>, and the media bucket is public, so an uploaded one becomes a
+ * script-bearing page hosted on the project's storage domain. Only admins can
+ * upload, which is why this is a small problem rather than a large one — but
+ * nothing here needs SVG. Checked before removing it: every badge and photo in
+ * the database is a PNG or JPEG, and the bucket holds no SVG at all.
+ */
 const ALLOWED = new Map([
   ["image/png", "png"],
   ["image/jpeg", "jpg"],
   ["image/webp", "webp"],
-  ["image/svg+xml", "svg"],
 ]);
 
 export type UploadResult =

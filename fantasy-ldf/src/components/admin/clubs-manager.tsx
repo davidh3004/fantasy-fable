@@ -263,7 +263,7 @@ export function ClubsManager({ clubs }: { clubs: AdminClub[] }) {
                   id="club-badgeFile"
                   name="badgeFile"
                   type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  accept="image/png,image/jpeg,image/webp"
                   className="h-10 cursor-pointer pt-2 text-xs"
                 />
                 <p className="text-xs text-muted-foreground">
