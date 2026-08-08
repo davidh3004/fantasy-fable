@@ -179,13 +179,6 @@
       "minutes": "min",
       "seconds": "seg"
     },
-    "actions": {
-      "title": "Accesos rápidos",
-      "team": "Mi equipo",
-      "transfers": "Fichajes",
-      "matches": "Partidos",
-      "leagues": "Ligas"
-    },
     "fixtures": {
       "title": "Partidos · Jornada {number}",
       "empty": "Sin partidos programados."

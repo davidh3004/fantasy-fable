@@ -179,13 +179,6 @@
       "minutes": "min",
       "seconds": "sec"
     },
-    "actions": {
-      "title": "Quick actions",
-      "team": "My team",
-      "transfers": "Transfers",
-      "matches": "Matches",
-      "leagues": "Leagues"
-    },
     "fixtures": {
       "title": "Matches · Gameweek {number}",
       "empty": "No matches scheduled."

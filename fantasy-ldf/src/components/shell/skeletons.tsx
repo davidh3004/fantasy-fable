@@ -33,12 +33,6 @@ export function DashboardSkeleton() {
           <Skeleton key={i} className="h-64 rounded-xl" />
         ))}
       </div>
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-14 rounded-xl" />
-        ))}
-      </div>
     </main>
   );
 }

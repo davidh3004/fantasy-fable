@@ -240,7 +240,9 @@ export function PlayerModal({
           )}
 
           {/* Text column, clear of the photo */}
-          <div className="relative ml-[42%] flex flex-col gap-2 py-3 pr-4 pl-1">
+          {/* pt clears the sheet's grab handle and the close button, so the name
+              never starts flush against the top edge. */}
+          <div className="relative ml-[42%] flex flex-col gap-2 pt-7 pr-4 pb-3 pl-1">
             <DialogHeader className="gap-0.5 text-left">
               {/* Given and family name on their own lines when the pair is
                   too long for one — wrapping beats truncating a person's

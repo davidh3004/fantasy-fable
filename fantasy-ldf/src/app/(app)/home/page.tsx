@@ -7,7 +7,6 @@ import { StatusChips } from "@/components/home/status-chips";
 import { PerformanceCard } from "@/components/home/performance-card";
 import { UpcomingMatches } from "@/components/home/upcoming-matches";
 import { MiniStandings } from "@/components/home/mini-standings";
-import { QuickActions } from "@/components/home/quick-actions";
 import { formatDeadline } from "@/lib/game/format";
 import {
   captainNotPlayed,
@@ -183,8 +182,6 @@ export default async function HomePage() {
         <UpcomingMatches fixtures={fixtures} squadByClub={squadByClub} />
         <MiniStandings rows={standings} />
       </div>
-
-      <QuickActions />
     </main>
   );
 }
