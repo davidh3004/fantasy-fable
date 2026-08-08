@@ -35,7 +35,7 @@
       "orEmail": "o con tu correo",
       "hasAccount": "¿Ya tienes cuenta?",
       "loginLink": "Inicia sesión",
-      "checkEmail": "¡Cuenta creada! Revisa tu correo para confirmarla."
+      "checkEmail": "Revisa tu correo para confirmar tu cuenta. Si ya tenías una con ese correo, inicia sesión o recupera tu contraseña."
     },
     "reset": {
       "title": "Recuperar contraseña",

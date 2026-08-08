@@ -35,7 +35,7 @@
       "orEmail": "or with your email",
       "hasAccount": "Already have an account?",
       "loginLink": "Sign in",
-      "checkEmail": "Account created! Check your email to confirm it."
+      "checkEmail": "Check your email to confirm your account. If you already had one with that address, sign in or reset your password."
     },
     "reset": {
       "title": "Reset password",

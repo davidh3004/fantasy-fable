@@ -46,6 +46,13 @@ export async function login(
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
+  // email_not_confirmed is kept distinct from invalid_credentials on purpose.
+  // Checked against the auth server: a wrong password returns
+  // invalid_credentials for an unknown address, a confirmed account and an
+  // unconfirmed one alike — email_not_confirmed only ever comes back once the
+  // password is already correct, so it tells an enumerator nothing they did
+  // not have. Collapsing the two would stall genuinely unconfirmed users on
+  // "wrong email or password" for no gain.
   if (error) return { error: mapAuthError(error.code), values: { email } };
 
   redirect("/home");
@@ -70,7 +77,7 @@ export async function register(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -79,11 +86,18 @@ export async function register(
     },
   });
 
-  if (error) return { error: mapAuthError(error.code), values };
-
-  // Supabase returns a user with no identities when the email is already registered.
-  if (data.user && data.user.identities?.length === 0) {
-    return { error: "user_already_exists", values };
+  // Never disclose whether the address already has an account. Supabase hands
+  // back a user with an empty identities array when the email is taken, and
+  // reporting that turns this form into a membership oracle: anyone can test
+  // addresses one at a time and learn who is registered here, which is the
+  // raw material for targeted phishing.
+  //
+  // Both that marker and an explicit user_already_exists resolve to the same
+  // neutral outcome as a genuine signup. The success copy covers both cases,
+  // so someone who forgot they had an account is still pointed somewhere
+  // useful rather than being told a comforting lie.
+  if (error && error.code !== "user_already_exists") {
+    return { error: mapAuthError(error.code), values };
   }
 
   return { success: "checkEmail" };
