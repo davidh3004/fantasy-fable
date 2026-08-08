@@ -36,9 +36,17 @@ const securityHeaders = [
   { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
 ];
 
+// Browser source maps are never shipped. They are only worth generating when
+// there is a Sentry token to upload them with — and even then they are deleted
+// from the build output once uploaded, so nothing readable reaches /_next.
+const uploadsSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
+
 const nextConfig: NextConfig = {
   // Stray lockfile in the user home dir confuses workspace-root inference.
   turbopack: { root: __dirname },
+  // Explicit rather than implicit: without an upload token nothing generates
+  // maps at all. (Left unset when uploading, so Sentry can turn generation on.)
+  ...(uploadsSourceMaps ? {} : { productionBrowserSourceMaps: false }),
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
@@ -51,5 +59,9 @@ export default withSentryConfig(withNextIntl(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: {
+    disable: !uploadsSourceMaps,
+    deleteSourcemapsAfterUpload: true,
+  },
 });
 
