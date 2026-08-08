@@ -13,9 +13,10 @@ import {
   playersPlayed,
   topScorer,
   unavailablePlayers,
-  type LineupPickLike,
   type PlayerStat,
 } from "../src/lib/game/dashboard";
+import { resolveLineup, type EnginePick } from "../src/lib/game/engine";
+import type { Position } from "../src/lib/game/squad";
 import { leagueDayOffset } from "../src/lib/game/format";
 import type { MarketPlayer } from "../src/lib/game/queries";
 import type { StandingRow } from "../src/lib/game/leagues";
@@ -48,11 +49,41 @@ const player = (over: Partial<MarketPlayer> & { id: string }): MarketPlayer => (
   ...over,
 });
 
-const pick = (
-  playerId: string,
-  slot: number,
-  isCaptain = false
-): LineupPickLike => ({ playerId, slot, isCaptain });
+const SETTINGS = {
+  startingSize: 11,
+  minDef: 3,
+  minMid: 2,
+  minFwd: 1,
+};
+
+/** A legal XI plus a four-man bench, so resolveLineup has something real. */
+function lineup(
+  over: Partial<Record<string, { points?: number; minutes?: number }>> = {},
+  roles: { captain?: string; vice?: string } = {}
+): EnginePick[] {
+  const shape: Array<[string, Position]> = [
+    ["gk", "GK"],
+    ["d1", "DEF"], ["d2", "DEF"], ["d3", "DEF"], ["d4", "DEF"],
+    ["m1", "MID"], ["m2", "MID"], ["m3", "MID"], ["m4", "MID"],
+    ["f1", "FWD"], ["f2", "FWD"],
+    // bench: backup GK first, then outfield in priority order
+    ["gk2", "GK"], ["d5", "DEF"], ["m5", "MID"], ["f3", "FWD"],
+  ];
+  return shape.map(([id, position], index) => ({
+    playerId: id,
+    slot: index + 1,
+    isCaptain: roles.captain === id,
+    isVice: roles.vice === id,
+    position,
+    points: over[id]?.points ?? 0,
+    minutes: over[id]?.minutes ?? 90,
+  }));
+}
+
+const pick = (playerId: string, isCaptain = false) => ({
+  playerId,
+  isCaptain,
+});
 
 const stats = (entries: Record<string, PlayerStat>) =>
   new Map(Object.entries(entries));
@@ -113,49 +144,40 @@ check("no fixtures yields no day headers", groupByDay([], eveningNow), []);
 
 // ---------------------------------------------------------------------------
 console.log("\n-- players played --");
-const xi = Array.from({ length: 11 }, (_, i) => pick(`p${i + 1}`, i + 1));
-const withBench = [...xi, pick("b1", 12), pick("b2", 13)];
 check(
-  "counts only starters with minutes",
+  "counts the counting XI who took the pitch",
   playersPlayed(
-    withBench,
-    stats({ p1: { points: 5, minutes: 90 }, p2: { points: 2, minutes: 30 } }),
+    resolveLineup(
+      lineup({ gk: { minutes: 90 }, d1: { minutes: 45 }, d2: { minutes: 0 } }),
+      SETTINGS
+    ),
+    stats({ gk: { points: 2, minutes: 90 }, d1: { points: 2, minutes: 45 } }),
     11
   ),
   { played: 2, total: 11 }
 );
 check(
-  "a bench player's minutes do not inflate the count",
-  playersPlayed(withBench, stats({ b1: { points: 9, minutes: 90 } }), 11),
-  { played: 0, total: 11 }
-);
-check(
-  "zero minutes is not 'played'",
-  playersPlayed(xi, stats({ p1: { points: 0, minutes: 0 } }), 11),
-  { played: 0, total: 11 }
-);
-check(
-  "no lineup falls back to the configured XI size",
-  playersPlayed([], stats({}), 11),
-  { played: 0, total: 11 }
+  "no lineup at all yields null, not a zero row",
+  playersPlayed(null, stats({}), 11),
+  null
 );
 
-// ---------------------------------------------------------------------------
 console.log("\n-- captain --");
-const capPicks = [pick("p1", 1, true), pick("p2", 2)];
 check(
-  "captain who hasn't played is flagged",
-  captainNotPlayed(capPicks, stats({ p2: { points: 6, minutes: 90 } })),
-  "p1"
+  "the named captain who hasn't played is flagged",
+  captainNotPlayed(
+    [pick("f1", true), pick("m1")],
+    stats({ m1: { points: 6, minutes: 90 } })
+  ),
+  "f1"
 );
 check(
   "captain who played is not flagged",
-  captainNotPlayed(capPicks, stats({ p1: { points: 6, minutes: 12 } })),
+  captainNotPlayed([pick("f1", true)], stats({ f1: { points: 6, minutes: 12 } })),
   null
 );
-check("no captain, nothing to flag", captainNotPlayed([pick("p1", 1)], stats({})), null);
+check("no captain, nothing to flag", captainNotPlayed([pick("f1")], stats({})), null);
 
-// ---------------------------------------------------------------------------
 console.log("\n-- league average --");
 check(
   "averages only teams that have a score",
@@ -171,28 +193,62 @@ check("empty standings → null", leagueAverage([]), null);
 
 // ---------------------------------------------------------------------------
 console.log("\n-- top scorer --");
-const squad = [player({ id: "p1" }), player({ id: "p2" }), player({ id: "p3" })];
-check(
-  "captain doubling can win the top spot",
-  topScorer(
-    squad,
-    [pick("p1", 1, true), pick("p2", 2)],
-    stats({ p1: { points: 6, minutes: 90 }, p2: { points: 9, minutes: 90 } })
-  ),
-  { player: player({ id: "p1" }), points: 12, isCaptain: true }
+const squadById = new Map(
+  ["gk", "d1", "d2", "d3", "d4", "m1", "m2", "m3", "m4", "f1", "f2", "gk2", "d5", "m5", "f3"].map(
+    (id) => [id, player({ id })]
+  )
 );
-check(
-  "a player who didn't feature is never top scorer",
-  topScorer(
-    squad,
-    [pick("p1", 1)],
-    stats({ p1: { points: 0, minutes: 0 }, p2: { points: 3, minutes: 45 } })
-  ),
-  { player: player({ id: "p2" }), points: 3, isCaptain: false }
-);
-check("nobody played → null", topScorer(squad, [], stats({})), null);
 
-// ---------------------------------------------------------------------------
+check(
+  "captain doubling can decide the top scorer",
+  (() => {
+    const r = resolveLineup(
+      lineup({ f1: { points: 6 }, m1: { points: 9 } }, { captain: "f1", vice: "m1" }),
+      SETTINGS
+    );
+    const top = topScorer(r, squadById);
+    return top && { id: top.player.id, points: top.points, isCaptain: top.isCaptain };
+  })(),
+  { id: "f1", points: 12, isCaptain: true }
+);
+
+// The regression: a team created after the gameweek started has a squad but no
+// lineup, and must not be credited with points its players earned regardless.
+check(
+  "no lineup → no top scorer, however well the squad's players did",
+  topScorer(null, squadById),
+  null
+);
+check(
+  "nobody has scored yet → null rather than a 0-point top scorer",
+  topScorer(resolveLineup(lineup(), SETTINGS), squadById),
+  null
+);
+check(
+  "a benched player who never came on is never top scorer",
+  (() => {
+    const r = resolveLineup(lineup({ f3: { points: 20 }, f1: { points: 4 } }), SETTINGS);
+    const top = topScorer(r, squadById);
+    return top && { id: top.player.id, points: top.points };
+  })(),
+  { id: "f1", points: 4 }
+);
+check(
+  "an auto-subbed bench player can be top scorer once they count",
+  (() => {
+    // f1 blanks with 0 minutes. The engine substitutes by bench priority, not
+    // by matching position, so d5 (first outfield sub) comes on — a 5-defender
+    // formation is still legal — and their points now count.
+    const r = resolveLineup(
+      lineup({ f1: { points: 0, minutes: 0 }, d5: { points: 11 } }),
+      SETTINGS
+    );
+    const top = topScorer(r, squadById);
+    return top && { id: top.player.id, points: top.points };
+  })(),
+  { id: "d5", points: 11 }
+);
+
 console.log("\n-- unavailable squad members --");
 check(
   "injured and suspended both count, available does not",

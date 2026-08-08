@@ -149,22 +149,21 @@ export default async function TeamPage({
     .filter((player) => playingClubs.has(player.clubId))
     .map((player) => player.id);
 
-  // Stat lines + rules power the modal's points breakdown. Only worth
-  // fetching once a gameweek is under way — there's nothing to explain before.
-  const hasStarted = isFinalized || isLive;
-  const [statsByGameweek, ruleRows] = hasStarted
-    ? await Promise.all([
-        getSeasonStatLinesByGameweek(season.id),
-        db
-          .select({
-            eventKey: scoringRules.eventKey,
-            position: scoringRules.position,
-            points: scoringRules.points,
-          })
-          .from(scoringRules)
-          .where(eq(scoringRules.seasonId, season.id)),
-      ])
-    : [null, null];
+  // Stat lines + rules power the modal's stepper. Fetched for every gameweek,
+  // including upcoming ones: the stepper walks the player's whole season, so
+  // gating on "has the viewed gameweek started" hid the history that already
+  // exists whenever a deadline is pending. Bounded by squad × gameweeks.
+  const [statsByGameweek, ruleRows] = await Promise.all([
+    getSeasonStatLinesByGameweek(season.id),
+    db
+      .select({
+        eventKey: scoringRules.eventKey,
+        position: scoringRules.position,
+        points: scoringRules.points,
+      })
+      .from(scoringRules)
+      .where(eq(scoringRules.seasonId, season.id)),
+  ]);
 
   // Points to show under each player.
   const pointsByPlayer: Record<string, number> = {};

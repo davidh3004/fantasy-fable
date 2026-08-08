@@ -31,8 +31,8 @@ export type PlayerGameweekRecord = {
  * ways round: iOS Safari before 15.4 only honours the prefixed property.
  */
 const FADE =
-  "linear-gradient(to right, black 0%, black 30%, rgba(0,0,0,0.85) 50%," +
-  " rgba(0,0,0,0.55) 68%, rgba(0,0,0,0.25) 84%, transparent 100%)";
+  "linear-gradient(to right, black 0%, black 55%, rgba(0,0,0,0.8) 72%," +
+  " rgba(0,0,0,0.45) 84%, rgba(0,0,0,0.15) 93%, transparent 100%)";
 
 const PHOTO_FADE = {
   maskImage: FADE,
@@ -218,29 +218,31 @@ export function PlayerModal({
             <div
               className="pointer-events-none absolute inset-0"
               style={{
-                background: `linear-gradient(to right, ${clubColor}00 0%, ${clubColor}40 45%, ${clubColor}d9 82%, ${clubColor} 100%)`,
+                background: `linear-gradient(to right, ${clubColor}00 0%, ${clubColor}00 55%, ${clubColor}66 72%, ${clubColor}cc 86%, ${clubColor} 100%)`,
               }}
               aria-hidden
             />
           </div>
 
-          {/* Club crest, top-left over the photo */}
-          <ClubBadge
-            player={player}
-            className="absolute top-2.5 left-2.5 z-[1] size-9 text-[10px]"
-          />
-
-          {(isCaptain || isVice) && (
+          {/* Top-left corner: the armband when this player wears it,
+              otherwise the club crest. One badge, one corner. */}
+          {isCaptain || isVice ? (
             <span
               className={cn(
-                "absolute top-2.5 left-13 z-[1] flex size-6 items-center justify-center rounded-full text-xs font-bold shadow",
+                "absolute top-2.5 left-2.5 z-[1] flex size-9 items-center justify-center rounded-full text-sm font-bold shadow",
                 isCaptain
                   ? "bg-yellow-400 text-yellow-950"
                   : "bg-slate-200 text-slate-800"
               )}
+              title={isCaptain ? t("actions.captain") : t("actions.vice")}
             >
               {isCaptain ? "C" : "V"}
             </span>
+          ) : (
+            <ClubBadge
+              player={player}
+              className="absolute top-2.5 left-2.5 z-[1] size-9 text-[10px]"
+            />
           )}
 
           {/* Text column, clear of the photo */}
@@ -249,7 +251,6 @@ export function PlayerModal({
               <DialogTitle className="truncate pr-6 text-xl leading-tight text-white">
                 {player.firstName} {player.lastName}
               </DialogTitle>
-              <p className="text-xs text-white/70">{tPos(player.position)}</p>
               <p className="flex items-center gap-1.5 text-xs text-white/90">
                 <ClubCrest
                   shortName={player.clubShortName}
@@ -260,6 +261,7 @@ export function PlayerModal({
                 />
                 <span className="truncate">{player.clubName}</span>
               </p>
+              <p className="text-xs text-white/70">{tPos(player.position)}</p>
             </DialogHeader>
 
             {/* Fact tiles, translucent so the club colour reads through */}

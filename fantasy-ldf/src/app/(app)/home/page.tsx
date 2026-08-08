@@ -21,7 +21,7 @@ import {
   getFixturesForGameweek,
   getGameweekPlayerStats,
   getLatestStartedGameweek,
-  getLineupPicks,
+  getManagerLineup,
   getNextGameweek,
   getSquadPlayers,
   getUserFantasyTeam,
@@ -30,6 +30,7 @@ import {
 import { getMyOverallStanding, getStandings } from "@/lib/game/leagues";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
 import { effectiveGameweekStatus } from "@/lib/game/status";
+import { resolveLineup, type EnginePick } from "@/lib/game/engine";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("home");
@@ -84,7 +85,7 @@ export default async function HomePage() {
       getMyOverallStanding(season.id, team.id),
       getSquadPlayers(team.id),
       displayGameweek ? getFixturesForGameweek(displayGameweek.id) : [],
-      startedGameweek ? getLineupPicks(team.id, startedGameweek.id) : [],
+      startedGameweek ? getManagerLineup(team.id, startedGameweek.id) : [],
       startedGameweek
         ? getGameweekPlayerStats(startedGameweek.id)
         : new Map<string, { points: number; minutes: number }>(),
@@ -93,14 +94,46 @@ export default async function HomePage() {
         : null,
     ]);
 
-  const played =
-    startedGameweek && picks.length > 0
-      ? playersPlayed(picks, playerStats, squadSettings.startingSize)
+  // Run the same engine the points total uses, so the figures beside it —
+  // players played, top scorer — can't disagree with it. A team with no lineup
+  // for this gameweek (created after it started) resolves to nothing, rather
+  // than borrowing points its players earned before the team existed.
+  const resolved =
+    picks.length > 0
+      ? resolveLineup(
+          picks.map(
+            (pick): EnginePick => ({
+              playerId: pick.id,
+              slot: pick.slot,
+              isCaptain: pick.isCaptain,
+              isVice: pick.isVice,
+              position: pick.position,
+              points: playerStats.get(pick.id)?.points ?? 0,
+              minutes: playerStats.get(pick.id)?.minutes ?? 0,
+            })
+          ),
+          squadSettings
+        )
       : null;
+
+  // Keyed by id so the top scorer resolves even for a player since transferred
+  // out — they still scored those points for you that gameweek.
+  const playersById = new Map(squad.map((p) => [p.id, p]));
+  for (const pick of picks) if (!playersById.has(pick.id)) playersById.set(pick.id, pick);
+
+  const played = playersPlayed(
+    resolved,
+    playerStats,
+    squadSettings.startingSize
+  );
 
   // Only worth flagging once matches are actually under way.
   const captainMissing =
-    gameweekState === "live" && captainNotPlayed(picks, playerStats) != null;
+    gameweekState === "live" &&
+    captainNotPlayed(
+      picks.map((p) => ({ playerId: p.id, isCaptain: p.isCaptain })),
+      playerStats
+    ) != null;
 
   const squadByClub: Record<string, number> = {};
   for (const player of squad) {
@@ -145,7 +178,7 @@ export default async function HomePage() {
           points={points}
           leagueAverage={leagueAverage(standings)}
           played={played}
-          topScorer={topScorer(squad, picks, playerStats)}
+          topScorer={topScorer(resolved, playersById)}
         />
         <UpcomingMatches fixtures={fixtures} squadByClub={squadByClub} />
         <MiniStandings rows={standings} />
