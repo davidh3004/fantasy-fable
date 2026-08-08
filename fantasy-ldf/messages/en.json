@@ -340,6 +340,8 @@
       "not_found": "No league exists with that code.",
       "wrong_season": "That league is from another season.",
       "already_member": "You're already a member of this league.",
+      "rate_limited": "Too many attempts. Wait a few minutes.",
+      "too_many_leagues": "You've already created too many leagues this season.",
       "unknown": "Something went wrong. Try again."
     }
   },

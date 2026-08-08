@@ -371,6 +371,21 @@ export const chipPlays = pgTable(
 ).enableRLS();
 
 // ---------------------------------------------------------------------------
+// Abuse control
+// ---------------------------------------------------------------------------
+
+// Fixed-window counters for server actions. Keyed "<action>:<userId>";
+// see src/lib/rate-limit.ts. Rows are self-expiring in effect — a key whose
+// window has passed is reset in place on its next hit.
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  windowStart: timestamp("window_start", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}).enableRLS();
+
+// ---------------------------------------------------------------------------
 // Mini-leagues
 // ---------------------------------------------------------------------------
 

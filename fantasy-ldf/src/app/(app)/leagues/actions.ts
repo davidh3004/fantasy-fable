@@ -1,11 +1,24 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { miniLeagueMembers, miniLeagues } from "@/db/schema";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { getActiveSeasonContext, getUserFantasyTeam } from "@/lib/game/queries";
+
+/**
+ * An invite code is 6 characters over a 32-symbol alphabet. That is a large
+ * space, but only if guesses cost something — with unlimited attempts a bot
+ * can work through it and land in private leagues. 15 tries per 10 minutes is
+ * far more than anyone typing a code they were given.
+ */
+const JOIN_ATTEMPTS = 15;
+const JOIN_WINDOW_SECONDS = 10 * 60;
+
+/** Enough leagues for any real use; a cap stops scripted table-filling. */
+const MAX_LEAGUES_OWNED = 20;
 
 export type LeagueState = {
   error?: string;
@@ -44,6 +57,22 @@ export async function createLeague(
 
   const name = String(formData.get("name") ?? "").trim();
   if (name.length < 3 || name.length > 40) return { error: "name_invalid" };
+
+  // Counted from the leagues themselves rather than a limiter: "how many
+  // leagues may one manager run" is a rule about the game, not about traffic,
+  // and it should not reset with a time window.
+  const [owned] = await db
+    .select({ n: count() })
+    .from(miniLeagues)
+    .where(
+      and(
+        eq(miniLeagues.ownerId, ctx.userId),
+        eq(miniLeagues.seasonId, ctx.seasonId)
+      )
+    );
+  if ((owned?.n ?? 0) >= MAX_LEAGUES_OWNED) {
+    return { error: "too_many_leagues" };
+  }
 
   // Retry on the (rare) invite-code collision.
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -87,6 +116,14 @@ export async function joinLeague(
     .trim()
     .toUpperCase();
   if (code.length < 4) return { error: "code_invalid" };
+
+  // Counted before the lookup, so guesses are what's limited — not successes.
+  const limit = await consumeRateLimit(
+    `join-league:${ctx.userId}`,
+    JOIN_ATTEMPTS,
+    JOIN_WINDOW_SECONDS
+  );
+  if (!limit.allowed) return { error: "rate_limited" };
 
   const [league] = await db
     .select({ id: miniLeagues.id, seasonId: miniLeagues.seasonId })

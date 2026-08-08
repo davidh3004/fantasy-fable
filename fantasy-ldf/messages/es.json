@@ -340,6 +340,8 @@
       "not_found": "No existe ninguna liga con ese código.",
       "wrong_season": "Esa liga es de otra temporada.",
       "already_member": "Ya eres miembro de esta liga.",
+      "rate_limited": "Demasiados intentos. Espera unos minutos.",
+      "too_many_leagues": "Ya creaste demasiadas ligas esta temporada.",
       "unknown": "Algo salió mal. Intenta de nuevo."
     }
   },
