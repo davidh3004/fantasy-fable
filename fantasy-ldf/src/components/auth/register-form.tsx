@@ -50,6 +50,7 @@ export function RegisterForm() {
             autoComplete="nickname"
             maxLength={30}
             required
+            defaultValue={state.values?.displayName}
             className="h-11"
           />
         </div>
@@ -62,6 +63,7 @@ export function RegisterForm() {
             type="email"
             autoComplete="email"
             required
+            defaultValue={state.values?.email}
             className="h-11"
           />
         </div>

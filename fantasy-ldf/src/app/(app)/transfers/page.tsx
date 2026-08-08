@@ -99,7 +99,7 @@ export default async function TransfersPage() {
           /* Two lines: gameweek on top, deadline beneath. On one line it ran
              long enough to crowd the title on a phone. */
           <div className="shrink-0 rounded-lg bg-card px-3 py-1.5 text-right">
-            <p className="text-xs font-medium">
+            <p className="text-center text-xs font-medium">
               {tTeam("gameweek", { number: nextGameweek.number })}
             </p>
             <p className="mt-0.5 text-[11px] capitalize text-muted-foreground">
