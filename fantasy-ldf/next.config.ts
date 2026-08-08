@@ -4,23 +4,9 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin();
 
-// Content-Security-Policy is shipped Report-Only first so it can't break the
-// app (Supabase XHR/WebSocket, external badge/photo images, next-themes' inline
-// script, Tailwind inline styles). Tune against the violation reports, then
-// switch the header key to "Content-Security-Policy" to enforce.
-const cspReportOnly = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
-  "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline'",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-].join("; ");
-
+// Content-Security-Policy is NOT here: it carries a per-request nonce, so it
+// is built and enforced in src/proxy.ts. Headers that are the same for every
+// request stay below.
 const securityHeaders = [
   {
     key: "Strict-Transport-Security",
@@ -33,7 +19,6 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
   },
-  { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
 ];
 
 // Browser source maps are never shipped. They are only worth generating when
