@@ -36,6 +36,9 @@ export function LoginForm({ urlError }: { urlError?: string }) {
             type="email"
             autoComplete="email"
             required
+            /* Re-seeded from the action's state: React 19 resets the form once
+               the action resolves, which otherwise wipes what was typed. */
+            defaultValue={state.values?.email}
             className="h-11"
           />
         </div>

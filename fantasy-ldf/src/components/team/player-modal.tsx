@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ClubBadge } from "@/components/pitch/player-chip";
 import { ClubCrest } from "@/components/shared/club-badge";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/game/format";
@@ -224,9 +223,9 @@ export function PlayerModal({
             />
           </div>
 
-          {/* Top-left corner: the armband when this player wears it,
-              otherwise the club crest. One badge, one corner. */}
-          {isCaptain || isVice ? (
+          {/* Top-left corner is the armband's alone — the club is already
+              named, with its crest, in the column beside the photo. */}
+          {(isCaptain || isVice) && (
             <span
               className={cn(
                 "absolute top-2.5 left-2.5 z-[1] flex size-9 items-center justify-center rounded-full text-sm font-bold shadow",
@@ -238,18 +237,17 @@ export function PlayerModal({
             >
               {isCaptain ? "C" : "V"}
             </span>
-          ) : (
-            <ClubBadge
-              player={player}
-              className="absolute top-2.5 left-2.5 z-[1] size-9 text-[10px]"
-            />
           )}
 
           {/* Text column, clear of the photo */}
           <div className="relative ml-[42%] flex flex-col gap-2 py-3 pr-4 pl-1">
             <DialogHeader className="gap-0.5 text-left">
-              <DialogTitle className="truncate pr-6 text-xl leading-tight text-white">
-                {player.firstName} {player.lastName}
+              {/* Given and family name on their own lines when the pair is
+                  too long for one — wrapping beats truncating a person's
+                  name. Each half still truncates if it alone overflows. */}
+              <DialogTitle className="pr-6 text-xl leading-tight text-white">
+                <span className="block truncate">{player.firstName}</span>
+                <span className="block truncate">{player.lastName}</span>
               </DialogTitle>
               <p className="flex items-center gap-1.5 text-xs text-white/90">
                 <ClubCrest

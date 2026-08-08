@@ -1,12 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, Info, Search } from "lucide-react";
+import { Info, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomSheetContent } from "@/components/ui/bottom-sheet";
 import { Input } from "@/components/ui/input";
-import { ClubBadge } from "@/components/pitch/player-chip";
 import { PlayerAvatar } from "@/components/shared/player-avatar";
 import { PositionBadge } from "@/components/shared/position-badge";
 import { cn } from "@/lib/utils";
@@ -133,30 +132,35 @@ export function MarketSheet({
             </DialogTitle>
           </DialogHeader>
 
-          {/* Outgoing player + available budget for this transfer */}
+          {/* Outgoing player + available budget. The player line mirrors the
+              candidate rows below exactly — same avatar, position chip and
+              price placement — so you're comparing like with like. */}
           {outgoing && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-cta/40 bg-cta/10 px-3 py-2.5">
-              <ClubBadge player={outgoing} className="size-7 text-[8px]" />
-              <span className="min-w-0 flex-1">
-                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {t("out")}
-                </span>
-                <span className="block truncate text-sm font-medium">
-                  {outgoing.lastName}{" "}
-                  <span className="tabular-nums text-muted-foreground">
-                    {formatMoney(outgoing.price)}
+            <div className="flex flex-col gap-2 rounded-xl border border-cta/40 bg-cta/10 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span>{t("out")}</span>
+                <span>
+                  {t("available")}{" "}
+                  <span className="font-heading text-sm tabular-nums text-emerald-300">
+                    {formatMoney(available)}
                   </span>
                 </span>
-              </span>
-              <ArrowRight className="size-4 shrink-0 text-cta" aria-hidden />
-              <span className="text-right">
-                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {t("available")}
+              </div>
+              <div className="flex items-center gap-3">
+                <PlayerAvatar photoUrl={outgoing.photoUrl} className="size-9" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">
+                    {outgoing.firstName} {outgoing.lastName}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {outgoing.clubName}
+                  </span>
                 </span>
-                <span className="block font-heading text-base tabular-nums text-emerald-300">
-                  {formatMoney(available)}
+                <PositionBadge position={outgoing.position} />
+                <span className="w-14 shrink-0 text-right text-sm font-semibold tabular-nums">
+                  {formatMoney(outgoing.price)}
                 </span>
-              </span>
+              </div>
             </div>
           )}
 

@@ -130,7 +130,7 @@ export async function GameweekHero({
           </dl>
 
           {deadline && deadlineLabel && (
-            <div className="flex flex-col items-center gap-1 border-t border-border pt-3 text-center">
+            <div className="flex flex-col items-center gap-2.5 border-t border-border pt-4 text-center">
               <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
                 <CalendarClock className="size-3.5" aria-hidden />
                 {t("deadline.subtitle")}

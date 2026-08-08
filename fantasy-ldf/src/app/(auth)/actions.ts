@@ -7,6 +7,15 @@ import { createClient } from "@/lib/supabase/server";
 export type AuthState = {
   error?: string;
   success?: string;
+  /**
+   * What the user typed, echoed back so a failed submit doesn't wipe the form.
+   * React 19 resets an uncontrolled form once its action resolves, so the
+   * fields have to be re-seeded from state as defaultValues.
+   *
+   * Passwords are deliberately absent: they'd be serialized into the payload
+   * sent to the browser, and clearing them on a failed sign-in is the norm.
+   */
+  values?: { email?: string; displayName?: string };
 };
 
 // Supabase auth error codes we translate; anything else falls back to "unknown".
@@ -33,12 +42,14 @@ export async function login(
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!email || !password) return { error: "missing_fields" };
+  if (!email || !password) {
+    return { error: "missing_fields", values: { email } };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) return { error: mapAuthError(error.code) };
+  if (error) return { error: mapAuthError(error.code), values: { email } };
 
   redirect("/home");
 }
@@ -52,9 +63,14 @@ export async function register(
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
-  if (!displayName || !email || !password) return { error: "missing_fields" };
-  if (password.length < 8) return { error: "weak_password" };
-  if (password !== confirmPassword) return { error: "passwords_mismatch" };
+  const values = { email, displayName };
+  if (!displayName || !email || !password) {
+    return { error: "missing_fields", values };
+  }
+  if (password.length < 8) return { error: "weak_password", values };
+  if (password !== confirmPassword) {
+    return { error: "passwords_mismatch", values };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -66,11 +82,11 @@ export async function register(
     },
   });
 
-  if (error) return { error: mapAuthError(error.code) };
+  if (error) return { error: mapAuthError(error.code), values };
 
   // Supabase returns a user with no identities when the email is already registered.
   if (data.user && data.user.identities?.length === 0) {
-    return { error: "user_already_exists" };
+    return { error: "user_already_exists", values };
   }
 
   return { success: "checkEmail" };
