@@ -64,6 +64,12 @@ function buildCsp(nonce: string): string {
   ].join("; ");
 }
 
+/**
+ * Where the browser posts Sentry events, tunnelled through our own origin so
+ * ad blockers don't drop them. Must match `tunnelRoute` in next.config.ts.
+ */
+const TUNNEL_PATH = "/ldf-monitoring";
+
 // Paths reachable without a session. Everything else requires auth.
 // (/api/sentry-check is token-gated in the handler; public so it's curl-able.)
 const PUBLIC_PATHS = [
@@ -72,6 +78,9 @@ const PUBLIC_PATHS = [
   "/reset-password",
   "/auth",
   "/api/sentry-check",
+  // An error on the login page is as worth reporting as any other; requiring a
+  // session here would bounce exactly those reports to /login.
+  TUNNEL_PATH,
 ];
 // Authed users get bounced away from these (update-password stays reachable
 // because the recovery flow arrives with a session).
