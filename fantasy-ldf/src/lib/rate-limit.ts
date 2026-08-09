@@ -1,6 +1,19 @@
+import { createHash } from "node:crypto";
 import * as Sentry from "@sentry/nextjs";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+
+/**
+ * Hashed so the table never becomes a log of who tried to sign in with which
+ * address. The counter only needs a stable key, not a readable one.
+ */
+export function limitKey(scope: string, value: string): string {
+  const digest = createHash("sha256")
+    .update(value.trim().toLowerCase())
+    .digest("hex")
+    .slice(0, 32);
+  return `${scope}:${digest}`;
+}
 
 /**
  * Fixed-window rate limiting, counted in Postgres.

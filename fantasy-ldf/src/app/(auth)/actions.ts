@@ -4,6 +4,44 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/config";
 import { getPasswordChangeContext } from "@/lib/auth/password-change";
+import { consumeRateLimit, limitKey } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/request-ip";
+
+/**
+ * Supabase throttles its own auth endpoints, but only it knows those numbers
+ * and only it decides when they apply. These are ours, in front: every attempt
+ * here costs a bcrypt or an email, and both are worth spending deliberately.
+ *
+ * Two keys where it matters. Per IP stops one machine sweeping many addresses;
+ * per address stops a patient attacker rotating IPs at one account. The
+ * per-address limits are kept loose enough that using them to lock a rival out
+ * of their own account is a poor weapon.
+ */
+const LIMITS = {
+  loginIp: { max: 10, window: 5 * 60 },
+  loginEmail: { max: 5, window: 15 * 60 },
+  registerIp: { max: 5, window: 60 * 60 },
+  resetEmail: { max: 3, window: 60 * 60 },
+  resetIp: { max: 10, window: 60 * 60 },
+  updatePasswordUser: { max: 5, window: 60 * 60 },
+} as const;
+
+/**
+ * Reports a trip as the same error Supabase's own throttle uses, so the user
+ * sees one message however the brake was applied — and so this never doubles
+ * as a signal about whether an address exists.
+ */
+const RATE_LIMITED: AuthState = { error: "over_request_rate_limit" };
+
+async function overLimit(
+  scope: string,
+  value: string | null,
+  { max, window }: { max: number; window: number }
+): Promise<boolean> {
+  if (!value) return false; // Unidentifiable client — see clientIp().
+  const { allowed } = await consumeRateLimit(limitKey(scope, value), max, window);
+  return !allowed;
+}
 
 export type AuthState = {
   error?: string;
@@ -43,6 +81,15 @@ export async function login(
     return { error: "missing_fields", values: { email } };
   }
 
+  // Counted before the password is checked, so guesses are what's limited.
+  const ip = await clientIp();
+  if (await overLimit("login:ip", ip, LIMITS.loginIp)) {
+    return { ...RATE_LIMITED, values: { email } };
+  }
+  if (await overLimit("login:email", email, LIMITS.loginEmail)) {
+    return { ...RATE_LIMITED, values: { email } };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -74,6 +121,12 @@ export async function register(
   if (password.length < 8) return { error: "weak_password", values };
   if (password !== confirmPassword) {
     return { error: "passwords_mismatch", values };
+  }
+
+  // Per IP only: a per-address limit here would answer the very question the
+  // neutral response above refuses to answer.
+  if (await overLimit("register:ip", await clientIp(), LIMITS.registerIp)) {
+    return { ...RATE_LIMITED, values };
   }
 
   const supabase = await createClient();
@@ -110,6 +163,16 @@ export async function resetPassword(
   const email = String(formData.get("email") ?? "").trim();
   if (!email) return { error: "missing_fields" };
 
+  // Every call here sends mail. Today Supabase's own SMTP throttle is the
+  // backstop; the day a real provider is connected, this is what stands
+  // between an attacker and a bill plus a burnt sending domain.
+  if (await overLimit("reset:ip", await clientIp(), LIMITS.resetIp)) {
+    return RATE_LIMITED;
+  }
+  if (await overLimit("reset:email", email, LIMITS.resetEmail)) {
+    return RATE_LIMITED;
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${SITE_URL}/auth/callback?next=/update-password`,
@@ -143,6 +206,18 @@ export async function updatePassword(
 
   const context = await getPasswordChangeContext();
   if (!context) redirect("/login");
+
+  // Re-authentication below spends a bcrypt per attempt, which makes this a
+  // password oracle against the session holder's own account if left open.
+  if (
+    await overLimit(
+      "updatepw:user",
+      context.user.id,
+      LIMITS.updatePasswordUser
+    )
+  ) {
+    return RATE_LIMITED;
+  }
 
   const supabase = await createClient();
 
