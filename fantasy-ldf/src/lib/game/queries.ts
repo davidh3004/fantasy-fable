@@ -673,14 +673,28 @@ export type GameweekStatLines = {
   opponents: Record<string, string>;
 };
 
+/** Tag to bust when a match result or a finalize changes the numbers. */
+export const SEASON_STATS_TAG = "season-stat-lines";
+
 /**
  * Stat lines for every started gameweek of a season, keyed by gameweek then
  * player. Powers the player modal's gameweek stepper, so a player's record can
  * be walked jornada by jornada without a round trip per step.
  *
- * Bounded by squad size × gameweeks played, which stays small.
+ * Cached because the answer is identical for every manager in the league and
+ * three separate pages ask for it — at a thousand concurrent readers that is a
+ * thousand identical aggregations over the season's match stats. Admin saves
+ * bust the tag, so during a live match the numbers move as the console records
+ * them; the thirty seconds is the ceiling if a bust is ever missed, not a
+ * delay anyone waits through.
  */
-export async function getSeasonStatLinesByGameweek(
+export const getSeasonStatLinesByGameweek = unstable_cache(
+  seasonStatLinesUncached,
+  ["season-stat-lines"],
+  { revalidate: 30, tags: [SEASON_STATS_TAG] }
+);
+
+async function seasonStatLinesUncached(
   seasonId: string
 ): Promise<GameweekStatLines[]> {
   const homeClub = alias(clubs, "gw_home_club");

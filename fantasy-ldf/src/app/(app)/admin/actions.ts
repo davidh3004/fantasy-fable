@@ -26,7 +26,11 @@ import { requireAdminAction } from "@/lib/admin";
 import { pickedFile, uploadImage } from "@/lib/storage";
 import { buildRuleLookup, computePoints } from "@/lib/game/scoring";
 import { FULL_TIME_MINUTE, minutesPlayed } from "@/lib/game/match-clock";
-import { getActiveSeasonContext, MARKET_PLAYERS_TAG } from "@/lib/game/queries";
+import {
+  getActiveSeasonContext,
+  MARKET_PLAYERS_TAG,
+  SEASON_STATS_TAG,
+} from "@/lib/game/queries";
 import type { Position } from "@/lib/game/squad";
 
 export type AdminActionState = { error?: string; success?: boolean };
@@ -72,6 +76,8 @@ function revalidateAll() {
   // than revalidateTag: it expires immediately instead of serving the stale
   // copy once more, so an admin sees their own edit on the next render.
   updateTag(MARKET_PLAYERS_TAG);
+  // Results, bonus points and finalize all move these numbers.
+  updateTag(SEASON_STATS_TAG);
 }
 
 // ---------------------------------------------------------------------------
