@@ -101,32 +101,66 @@ const AUTH_ONLY_BOUNCE = ["/login", "/register"];
  * obviously machine-driven. It is a brake, not a wall — the wall would be an
  * edge firewall, which this plan does not have.
  */
-const BURST_MAX = 120;
-const BURST_WINDOW_MS = 10_000;
-const BURST_MAX_KEYS = 5_000;
+const BURST = { max: 120, windowMs: 10_000 };
 
-const bursts = new Map<string, { count: number; resetAt: number }>();
+/**
+ * Pages whose render costs real database work — the market list, the season's
+ * stat lines, the standings.
+ *
+ * The ceiling counts next/link prefetches too. Exempting them was tried and
+ * dropped: the `next-router-prefetch` header does not reach this code, and a
+ * branch that claims to skip something it never skips is worse than no branch.
+ * A hundred a minute leaves room for a reader whose hovering prefetches ahead
+ * of them, while a script doing thousands still runs into it.
+ */
+const HEAVY_PATHS = ["/transfers", "/team", "/home", "/managers", "/leagues"];
+const HEAVY = { max: 100, windowMs: 60_000 };
 
-function overBurstLimit(ip: string | null, now: number): boolean {
-  // An unidentifiable client is not counted rather than sharing one bucket;
-  // a shared bucket would let the first burst lock out everyone behind it.
-  if (!ip) return false;
+const MAX_KEYS = 5_000;
+const counters = new Map<string, { count: number; resetAt: number }>();
 
-  const entry = bursts.get(ip);
+type LimitVerdict = { over: boolean; retryAfter: number };
+const UNDER: LimitVerdict = { over: false, retryAfter: 0 };
+
+/**
+ * One fixed window per key, in memory. Null keys are not counted: an
+ * unidentifiable client sharing one bucket would let the first burst lock out
+ * everyone behind it.
+ */
+function hit(
+  key: string | null,
+  { max, windowMs }: { max: number; windowMs: number },
+  now: number
+): LimitVerdict {
+  if (!key) return UNDER;
+
+  const entry = counters.get(key);
   if (!entry || entry.resetAt <= now) {
-    // Bounded memory: the map is cheap to rebuild and holds only live windows.
-    if (bursts.size >= BURST_MAX_KEYS) {
-      for (const [key, value] of bursts) {
-        if (value.resetAt <= now) bursts.delete(key);
-      }
-      if (bursts.size >= BURST_MAX_KEYS) bursts.clear();
+    // Bounded memory: drop dead windows, and start over if that isn't enough.
+    if (counters.size >= MAX_KEYS) {
+      for (const [k, v] of counters) if (v.resetAt <= now) counters.delete(k);
+      if (counters.size >= MAX_KEYS) counters.clear();
     }
-    bursts.set(ip, { count: 1, resetAt: now + BURST_WINDOW_MS });
-    return false;
+    counters.set(key, { count: 1, resetAt: now + windowMs });
+    return UNDER;
   }
 
   entry.count++;
-  return entry.count > BURST_MAX;
+  if (entry.count <= max) return UNDER;
+  return {
+    over: true,
+    retryAfter: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
+  };
+}
+
+function tooManyRequests(retryAfter: number): NextResponse {
+  return new NextResponse("Too many requests", {
+    status: 429,
+    headers: {
+      "Retry-After": String(retryAfter),
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 export async function proxy(request: NextRequest) {
@@ -136,15 +170,8 @@ export async function proxy(request: NextRequest) {
     request.headers.get("x-real-ip")?.trim() ||
     null;
 
-  if (overBurstLimit(ip, now)) {
-    return new NextResponse("Too many requests", {
-      status: 429,
-      headers: {
-        "Retry-After": String(Math.ceil(BURST_WINDOW_MS / 1000)),
-        "Cache-Control": "no-store",
-      },
-    });
-  }
+  const burst = hit(ip && `burst:${ip}`, BURST, now);
+  if (burst.over) return tooManyRequests(burst.retryAfter);
 
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   const nonce = btoa(String.fromCharCode(...bytes));
@@ -201,6 +228,18 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic =
     path === "/" || PUBLIC_PATHS.some((p) => path.startsWith(p));
+
+  /**
+   * Keyed by user where there is one: several managers behind one household or
+   * office address should not share a ceiling, and a signed-in abuser should
+   * not shed their count by changing networks. Falls back to the address for
+   * anonymous traffic.
+   */
+  if (HEAVY_PATHS.some((p) => path.startsWith(p))) {
+    const who = user?.sub ?? ip;
+    const heavy = hit(who && `heavy:${who}`, HEAVY, now);
+    if (heavy.over) return tooManyRequests(heavy.retryAfter);
+  }
 
   const redirectTo = (pathname: string) => {
     const url = request.nextUrl.clone();
