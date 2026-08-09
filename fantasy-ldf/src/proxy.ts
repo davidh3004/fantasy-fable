@@ -86,7 +86,66 @@ const PUBLIC_PATHS = [
 // because the recovery flow arrives with a session).
 const AUTH_ONLY_BOUNCE = ["/login", "/register"];
 
+/**
+ * A burst brake that runs before anything touches the database.
+ *
+ * The app-level limiter lives in Postgres, which means every request it
+ * refuses has still spent a connection from a pool of sixty — fine against
+ * credential stuffing, useless against a flood. This one runs in the edge
+ * middleware and costs a map lookup, so a single source hammering the app is
+ * turned away before a page render opens a connection.
+ *
+ * It is per instance, not global: serverless spreads requests across
+ * instances, so a distributed attack slips through in proportion to how many
+ * it hits. That is why the ceiling is high enough to only catch what is
+ * obviously machine-driven. It is a brake, not a wall — the wall would be an
+ * edge firewall, which this plan does not have.
+ */
+const BURST_MAX = 120;
+const BURST_WINDOW_MS = 10_000;
+const BURST_MAX_KEYS = 5_000;
+
+const bursts = new Map<string, { count: number; resetAt: number }>();
+
+function overBurstLimit(ip: string | null, now: number): boolean {
+  // An unidentifiable client is not counted rather than sharing one bucket;
+  // a shared bucket would let the first burst lock out everyone behind it.
+  if (!ip) return false;
+
+  const entry = bursts.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    // Bounded memory: the map is cheap to rebuild and holds only live windows.
+    if (bursts.size >= BURST_MAX_KEYS) {
+      for (const [key, value] of bursts) {
+        if (value.resetAt <= now) bursts.delete(key);
+      }
+      if (bursts.size >= BURST_MAX_KEYS) bursts.clear();
+    }
+    bursts.set(ip, { count: 1, resetAt: now + BURST_WINDOW_MS });
+    return false;
+  }
+
+  entry.count++;
+  return entry.count > BURST_MAX;
+}
+
 export async function proxy(request: NextRequest) {
+  const now = Date.now();
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    null;
+
+  if (overBurstLimit(ip, now)) {
+    return new NextResponse("Too many requests", {
+      status: 429,
+      headers: {
+        "Retry-After": String(Math.ceil(BURST_WINDOW_MS / 1000)),
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   const nonce = btoa(String.fromCharCode(...bytes));
   const csp = buildCsp(nonce);

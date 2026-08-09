@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { and, asc, desc, eq, gt, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
@@ -94,7 +95,33 @@ export type MarketPlayer = {
   photoUrl: string | null;
 };
 
-export async function getMarketPlayers(
+/** Tag to bust when an admin edits a player or a club. */
+export const MARKET_PLAYERS_TAG = "market-players";
+
+/**
+ * The transfer market's player list — the most expensive query the app runs,
+ * measured at roughly 200ms, on a page every manager opens repeatedly.
+ *
+ * It is cached because its inputs barely move: prices are static in v1 and the
+ * rest only changes when an admin edits a player or a club, which busts the
+ * tag immediately. Five minutes is the ceiling on staleness if a tag is ever
+ * missed, not the expected delay.
+ *
+ * Only display reads go through here. makeTransfers and createFantasyTeam
+ * re-read players straight from the database for validation, so a cached row
+ * can never authorise a transfer at a stale price.
+ *
+ * unstable_cache rather than `use cache`: the latter requires enabling Cache
+ * Components, which makes rendering static by default, and a static shell
+ * cannot carry the per-request CSP nonce that proxy.ts issues.
+ */
+export const getMarketPlayers = unstable_cache(
+  marketPlayersUncached,
+  ["market-players"],
+  { revalidate: 300, tags: [MARKET_PLAYERS_TAG] }
+);
+
+async function marketPlayersUncached(
   competitionId: string
 ): Promise<MarketPlayer[]> {
   return db

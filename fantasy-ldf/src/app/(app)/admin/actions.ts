@@ -1,7 +1,7 @@
 "use server";
 
 import * as Sentry from "@sentry/nextjs";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { and, count, eq, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -26,7 +26,7 @@ import { requireAdminAction } from "@/lib/admin";
 import { pickedFile, uploadImage } from "@/lib/storage";
 import { buildRuleLookup, computePoints } from "@/lib/game/scoring";
 import { FULL_TIME_MINUTE, minutesPlayed } from "@/lib/game/match-clock";
-import { getActiveSeasonContext } from "@/lib/game/queries";
+import { getActiveSeasonContext, MARKET_PLAYERS_TAG } from "@/lib/game/queries";
 import type { Position } from "@/lib/game/squad";
 
 export type AdminActionState = { error?: string; success?: boolean };
@@ -67,6 +67,11 @@ function revalidateAll() {
   for (const path of ["/admin", "/home", "/team", "/transfers", "/matches"]) {
     revalidatePath(path, "layout");
   }
+  // The market list is cached for five minutes; without this an edited price,
+  // photo or injury flag would sit stale behind that window. updateTag rather
+  // than revalidateTag: it expires immediately instead of serving the stale
+  // copy once more, so an admin sees their own edit on the next render.
+  updateTag(MARKET_PLAYERS_TAG);
 }
 
 // ---------------------------------------------------------------------------
