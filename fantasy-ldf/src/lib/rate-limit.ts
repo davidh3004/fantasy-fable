@@ -34,11 +34,32 @@ export type RateLimitResult = {
   retryAfter: number;
 };
 
+/**
+ * Rows are keyed per address and per account, so the table grows with everyone
+ * who ever hit a guarded action and never shrinks on its own — a counter whose
+ * window closed is dead weight. Swept here rather than on a schedule because
+ * there is no scheduler: one call in two hundred pays for a delete that keeps
+ * the table proportional to live traffic instead of to all traffic ever.
+ */
+const SWEEP_ODDS = 200;
+
+async function sweepExpired(): Promise<void> {
+  if (Math.random() * SWEEP_ODDS >= 1) return;
+  try {
+    await db.execute(
+      sql`delete from rate_limits where window_start < now() - interval '1 day'`
+    );
+  } catch {
+    // Housekeeping; never worth surfacing.
+  }
+}
+
 export async function consumeRateLimit(
   key: string,
   limit: number,
   windowSeconds: number
 ): Promise<RateLimitResult> {
+  void sweepExpired();
   try {
     const rows = await db.execute<{ count: number; age_seconds: number }>(sql`
       insert into rate_limits (key, count, window_start)
