@@ -24,6 +24,7 @@ import {
   toSquadSettings,
 } from "@/lib/game/queries";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
+import { ensureLineupsForGameweek } from "@/lib/game/ensure-lineups";
 import { effectiveFixtureStatus } from "@/lib/game/status";
 import { db } from "@/db";
 import { scoringRules } from "@/db/schema";
@@ -108,6 +109,20 @@ export default async function TeamPage({
     selected.id === nextGameweek.id &&
     selected.deadline > now;
   const isLive = !isFinalized && selected.deadline <= now;
+
+  // Once the deadline has passed the squad that was standing is the one that
+  // plays, but nothing writes that row until an admin finalizes — which can be
+  // days later, or never for a gameweek nobody finalizes. So freeze it on the
+  // first read after the deadline: managers who were already playing get their
+  // lineup, instead of being told they had no team. Idempotent, and a no-op
+  // once the rows exist, so later reads pay one cheap lookup.
+  if (!isEditable && selected.deadline <= now) {
+    await ensureLineupsForGameweek(
+      selected.id,
+      season.id,
+      settings.startingSize
+    );
+  }
 
   const [picks, gameweekFixtures] = await Promise.all([
     getLineupPicks(team.id, selected.id),
