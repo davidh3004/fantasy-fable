@@ -18,8 +18,28 @@ import { verifyAccessToken } from "@/lib/supabase/jwt";
  * values that change per row. Injected CSS is a far smaller problem than
  * injected script, so this is where the line is drawn.
  */
+/**
+ * Sentry's ingest host, taken from the DSN rather than guessed.
+ *
+ * A wildcard is the wrong tool here: CSP matches `*.` against a literal
+ * suffix, so `*.ingest.sentry.io` does not cover a regional host like
+ * `oNNN.ingest.us.sentry.io` — which is exactly how the browser came to block
+ * every event. The DSN already names the host, so use it, and it keeps working
+ * if the project or region ever changes.
+ */
+function sentryIngestOrigin(): string | null {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  if (!dsn) return null;
+  try {
+    return new URL(dsn).origin;
+  } catch {
+    return null;
+  }
+}
+
 function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
+  const sentry = sentryIngestOrigin();
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -34,8 +54,13 @@ function buildCsp(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${
       isDev ? " 'unsafe-eval'" : ""
     }`,
-    // Supabase for auth/data; Sentry's ingest host once a DSN is configured.
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io",
+    // Supabase for auth/data; Sentry's ingest host when a DSN is configured.
+    [
+      "connect-src 'self'",
+      "https://*.supabase.co",
+      "wss://*.supabase.co",
+      ...(sentry ? [sentry] : []),
+    ].join(" "),
   ].join("; ");
 }
 
