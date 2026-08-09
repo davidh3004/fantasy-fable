@@ -315,7 +315,7 @@ export async function recomputeDeadline(
 }
 
 /** What a gameweek would take with it — drives the confirm dialog copy. */
-export type GameweekUsage = {
+type GameweekUsage = {
   fixtures: number;
   lineups: number;
   transfers: number;
@@ -323,7 +323,15 @@ export type GameweekUsage = {
   finished: boolean;
 };
 
-export async function getGameweekUsage(id: string): Promise<GameweekUsage> {
+/**
+ * Deliberately not exported. Every export of a "use server" module is a live
+ * endpoint that anyone holding the action id can POST to, and this one was
+ * reachable by any signed-in user: it leaks how many lineups, transfers and
+ * chips a gameweek holds, and runs five queries per call. Its only caller is
+ * deleteGameweek below, which does its own admin check — so keeping it module
+ * local removes the endpoint instead of guarding it.
+ */
+async function getGameweekUsage(id: string): Promise<GameweekUsage> {
   const [gameweek, fx, lineups, tf, chips] = await Promise.all([
     db
       .select({ status: gameweeks.status })

@@ -35,7 +35,7 @@
       "orEmail": "o con tu correo",
       "hasAccount": "¿Ya tienes cuenta?",
       "loginLink": "Inicia sesión",
-      "checkEmail": "¡Cuenta creada! Revisa tu correo para confirmarla."
+      "checkEmail": "Revisa tu correo para confirmar tu cuenta. Si ya tenías una con ese correo, inicia sesión o recupera tu contraseña."
     },
     "reset": {
       "title": "Recuperar contraseña",
@@ -48,6 +48,7 @@
     "update": {
       "title": "Nueva contraseña",
       "subtitle": "Escribe tu nueva contraseña",
+      "currentPassword": "Contraseña actual",
       "password": "Nueva contraseña",
       "confirmPassword": "Confirmar contraseña",
       "submit": "Actualizar contraseña"
@@ -59,6 +60,9 @@
       "user_already_exists": "Ya existe una cuenta con este correo.",
       "weak_password": "La contraseña debe tener al menos 8 caracteres.",
       "passwords_mismatch": "Las contraseñas no coinciden.",
+      "current_password_required": "Escribe tu contraseña actual.",
+      "current_password_wrong": "La contraseña actual no es correcta.",
+      "password_unchanged": "La nueva contraseña debe ser distinta de la actual.",
       "over_request_rate_limit": "Demasiados intentos. Espera un momento.",
       "oauth": "No se pudo conectar con Google. Intenta de nuevo.",
       "confirm": "El enlace no es válido o expiró.",
@@ -336,6 +340,8 @@
       "not_found": "No existe ninguna liga con ese código.",
       "wrong_season": "Esa liga es de otra temporada.",
       "already_member": "Ya eres miembro de esta liga.",
+      "rate_limited": "Demasiados intentos. Espera unos minutos.",
+      "too_many_leagues": "Ya creaste demasiadas ligas esta temporada.",
       "unknown": "Algo salió mal. Intenta de nuevo."
     }
   },

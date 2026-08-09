@@ -3,7 +3,7 @@ import { Chakra_Petch, Russo_One } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
-import { APP_NAME } from "@/lib/config";
+import { APP_NAME, SITE_URL } from "@/lib/config";
 import "./globals.css";
 
 const chakraPetch = Chakra_Petch({
@@ -17,8 +17,6 @@ const russoOne = Russo_One({
   weight: "400",
   subsets: ["latin"],
 });
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

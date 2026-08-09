@@ -101,10 +101,27 @@ export async function makeTransfers(
     preSeason: !seasonStarted,
   });
 
-  let bankDelta = 0;
+  // Resolved once, and checked rather than asserted. validateTransferBatch
+  // above already rejects a pair naming a player outside the squad or the
+  // market, so this cannot fire today — but a `!` here would turn any future
+  // gap in that validation into a 500 instead of a handled error.
+  const resolved: { outId: string; inId: string; outPrice: number; inPrice: number }[] = [];
   for (const pair of pairs) {
-    bankDelta += poolById.get(pair.outId)!.price;
-    bankDelta -= poolById.get(pair.inId)!.price;
+    const out = poolById.get(pair.outId);
+    const incoming = poolById.get(pair.inId);
+    if (!out || !incoming) return { error: "invalid" };
+    resolved.push({
+      outId: pair.outId,
+      inId: pair.inId,
+      outPrice: out.price,
+      inPrice: incoming.price,
+    });
+  }
+
+  let bankDelta = 0;
+  for (const pair of resolved) {
+    bankDelta += pair.outPrice;
+    bankDelta -= pair.inPrice;
   }
 
   try {
@@ -131,10 +148,10 @@ export async function makeTransfers(
         )
       );
       await tx.insert(squadPicks).values(
-        pairs.map((pair) => ({
+        resolved.map((pair) => ({
           fantasyTeamId: team.id,
           playerId: pair.inId,
-          purchasePrice: poolById.get(pair.inId)!.price,
+          purchasePrice: pair.inPrice,
         }))
       );
 

@@ -1,3 +1,6 @@
+// Fails the build loudly if this module is ever pulled into a client bundle —
+// DATABASE_URL holds the pooler password and must never reach the browser.
+import "server-only";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";

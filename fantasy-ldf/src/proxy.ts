@@ -2,6 +2,43 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAccessToken } from "@/lib/supabase/jwt";
 
+/**
+ * The Content-Security-Policy lives here rather than in next.config.ts because
+ * it carries a per-request nonce, and only a request-time hook can mint one.
+ *
+ * It is enforced, not Report-Only: the previous header logged violations and
+ * blocked nothing, which is no defence at all. script-src carries no
+ * 'unsafe-inline' — Next stamps this nonce onto every script tag it emits, so
+ * a <script> smuggled into the page through injected content simply does not
+ * run. That is the protection an XSS-stolen session cookie depended on.
+ *
+ * style-src keeps 'unsafe-inline' on purpose: the app sets style attributes
+ * from data (club colours, progress bar widths), and CSP nonces cannot cover
+ * style *attributes* — only <style> elements. Removing it would mean hashing
+ * values that change per row. Injected CSS is a far smaller problem than
+ * injected script, so this is where the line is drawn.
+ */
+function buildCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV === "development";
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    // 'strict-dynamic' lets the nonced framework bundle load its own chunks.
+    // React needs eval in development only; production has no eval.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${
+      isDev ? " 'unsafe-eval'" : ""
+    }`,
+    // Supabase for auth/data; Sentry's ingest host once a DSN is configured.
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io",
+  ].join("; ");
+}
+
 // Paths reachable without a session. Everything else requires auth.
 // (/api/sentry-check is token-gated in the handler; public so it's curl-able.)
 const PUBLIC_PATHS = [
@@ -16,7 +53,26 @@ const PUBLIC_PATHS = [
 const AUTH_ONLY_BOUNCE = ["/login", "/register"];
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = btoa(String.fromCharCode(...bytes));
+  const csp = buildCsp(nonce);
+
+  /**
+   * Next reads the nonce off the *request* headers to stamp its script tags,
+   * so both headers have to be forwarded inward. Rebuilt each time rather than
+   * captured once, because the Supabase client mutates request cookies before
+   * the response is recreated below and those updates must survive.
+   */
+  const nextWithCsp = () => {
+    const headers = new Headers(request.headers);
+    headers.set("x-nonce", nonce);
+    headers.set("Content-Security-Policy", csp);
+    const res = NextResponse.next({ request: { headers } });
+    res.headers.set("Content-Security-Policy", csp);
+    return res;
+  };
+
+  let response = nextWithCsp();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,7 +86,7 @@ export async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          response = NextResponse.next({ request });
+          response = nextWithCsp();
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
@@ -60,6 +116,7 @@ export async function proxy(request: NextRequest) {
     const redirect = NextResponse.redirect(url);
     // Preserve any refreshed session cookies on the redirect response.
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    redirect.headers.set("Content-Security-Policy", csp);
     return redirect;
   };
 

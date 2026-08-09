@@ -35,7 +35,7 @@
       "orEmail": "or with your email",
       "hasAccount": "Already have an account?",
       "loginLink": "Sign in",
-      "checkEmail": "Account created! Check your email to confirm it."
+      "checkEmail": "Check your email to confirm your account. If you already had one with that address, sign in or reset your password."
     },
     "reset": {
       "title": "Reset password",
@@ -48,6 +48,7 @@
     "update": {
       "title": "New password",
       "subtitle": "Type your new password",
+      "currentPassword": "Current password",
       "password": "New password",
       "confirmPassword": "Confirm password",
       "submit": "Update password"
@@ -59,6 +60,9 @@
       "user_already_exists": "An account with this email already exists.",
       "weak_password": "Password must be at least 8 characters.",
       "passwords_mismatch": "Passwords don't match.",
+      "current_password_required": "Type your current password.",
+      "current_password_wrong": "That current password isn't right.",
+      "password_unchanged": "The new password must differ from the current one.",
       "over_request_rate_limit": "Too many attempts. Wait a moment.",
       "oauth": "Couldn't connect with Google. Try again.",
       "confirm": "The link is invalid or expired.",
@@ -336,6 +340,8 @@
       "not_found": "No league exists with that code.",
       "wrong_season": "That league is from another season.",
       "already_member": "You're already a member of this league.",
+      "rate_limited": "Too many attempts. Wait a few minutes.",
+      "too_many_leagues": "You've already created too many leagues this season.",
       "unknown": "Something went wrong. Try again."
     }
   },

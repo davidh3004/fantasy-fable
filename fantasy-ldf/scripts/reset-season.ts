@@ -12,9 +12,12 @@
  * Destructive and irreversible. Requires --yes, and refuses to touch a
  * database whose URL doesn't look like a dev one unless --force is given too.
  *
- *   npx tsx scripts/reset-season.ts --yes
- *   npx tsx scripts/reset-season.ts --yes --force   # non-dev database
- *   npx tsx scripts/reset-season.ts --dry-run       # count only, no writes
+ *   npm run db:reset -- --yes
+ *   npm run db:reset -- --yes --force   # non-dev database
+ *   npm run db:reset -- --dry-run       # count only, no writes
+ *
+ * Go through the npm script: it passes --conditions react-server, which the
+ * "server-only" guard in src/db needs to resolve outside of Next.
  */
 import { config } from "dotenv";
 config({ path: ".env.local" });
