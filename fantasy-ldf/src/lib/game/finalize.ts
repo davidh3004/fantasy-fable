@@ -4,7 +4,7 @@
  */
 
 import * as Sentry from "@sentry/nextjs";
-import { and, asc, count, eq, gt, inArray, lt, ne, notExists, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   fantasyTeams,
@@ -14,11 +14,10 @@ import {
   lineupPicks,
   playerMatchStats,
   players,
-  squadPicks,
 } from "@/db/schema";
 import { resolveLineup, type EnginePick } from "./engine";
-import { buildInitialLineup, type PickablePlayer } from "./squad";
 import { getActiveSeasonContext } from "./queries";
+import { ensureLineupsForGameweek } from "./ensure-lineups";
 
 export type FinalizeError =
   | "validation"
@@ -34,169 +33,6 @@ export type UnfinalizeError =
   | "not_finished"
   | "later_finalized"
   | "unknown";
-
-/**
- * Guarantees every team in the season has a lineup for this gameweek before
- * it's scored.
- *
- * Onboarding writes a lineup and finalize rolls it forward, so most teams
- * already have one. The gaps are teams that never got that far — one created
- * while no gameweek was upcoming, or any team when a gameweek is added *after*
- * the previous one was finalized, which leaves the whole league with nothing to
- * roll forward into. Those teams would otherwise score zero and read as "no
- * lineup" forever, purely for not having touched a screen.
- *
- * Their most recent earlier lineup is carried forward when there is one, so a
- * manager keeps their captain and bench order rather than being reset to a
- * price-ranked default. Picks are reconciled against the current squad — a
- * player since transferred out can't be fielded — and anything short of a full
- * XI falls back to the default build.
- *
- * Teams with no squad are skipped: they don't exist as far as this gameweek is
- * concerned, which is the honest "no lineup" the manager page should show.
- */
-async function ensureLineupsForGameweek(
-  gameweekId: string,
-  seasonId: string,
-  startingSize: number
-): Promise<number> {
-  const missing = await db
-    .select({ id: fantasyTeams.id })
-    .from(fantasyTeams)
-    .where(
-      and(
-        eq(fantasyTeams.seasonId, seasonId),
-        notExists(
-          db
-            .select({ one: sql`1` })
-            .from(gameweekLineups)
-            .where(
-              and(
-                eq(gameweekLineups.fantasyTeamId, fantasyTeams.id),
-                eq(gameweekLineups.gameweekId, gameweekId)
-              )
-            )
-        )
-      )
-    );
-  if (missing.length === 0) return 0;
-
-  const teamIds = missing.map((t) => t.id);
-
-  // Current squads, with what buildInitialLineup needs to rank them.
-  const squadRows = await db
-    .select({
-      fantasyTeamId: squadPicks.fantasyTeamId,
-      id: players.id,
-      position: players.position,
-      price: players.price,
-      clubId: players.clubId,
-    })
-    .from(squadPicks)
-    .innerJoin(players, eq(players.id, squadPicks.playerId))
-    .where(inArray(squadPicks.fantasyTeamId, teamIds));
-
-  const squads = new Map<string, PickablePlayer[]>();
-  for (const { fantasyTeamId, ...player } of squadRows) {
-    const squad = squads.get(fantasyTeamId) ?? [];
-    squad.push(player);
-    squads.set(fantasyTeamId, squad);
-  }
-
-  // Each team's most recent lineup before this gameweek, to carry forward.
-  const priorRows = await db
-    .select({
-      fantasyTeamId: gameweekLineups.fantasyTeamId,
-      number: gameweeks.number,
-      playerId: lineupPicks.playerId,
-      slot: lineupPicks.slot,
-      isCaptain: lineupPicks.isCaptain,
-      isVice: lineupPicks.isVice,
-    })
-    .from(gameweekLineups)
-    .innerJoin(gameweeks, eq(gameweeks.id, gameweekLineups.gameweekId))
-    .innerJoin(lineupPicks, eq(lineupPicks.lineupId, gameweekLineups.id))
-    .where(
-      and(
-        inArray(gameweekLineups.fantasyTeamId, teamIds),
-        eq(gameweeks.seasonId, seasonId),
-        lt(
-          gameweeks.number,
-          db
-            .select({ n: gameweeks.number })
-            .from(gameweeks)
-            .where(eq(gameweeks.id, gameweekId))
-        )
-      )
-    )
-    .orderBy(asc(gameweeks.number), asc(lineupPicks.slot));
-
-  type PriorPick = {
-    playerId: string;
-    slot: number;
-    isCaptain: boolean;
-    isVice: boolean;
-  };
-  // Ordered ascending, so the last gameweek seen per team wins.
-  const latestPrior = new Map<string, { number: number; picks: PriorPick[] }>();
-  for (const { fantasyTeamId, number, ...pick } of priorRows) {
-    const entry = latestPrior.get(fantasyTeamId);
-    if (!entry || entry.number < number) {
-      latestPrior.set(fantasyTeamId, { number, picks: [pick] });
-    } else if (entry.number === number) {
-      entry.picks.push(pick);
-    }
-  }
-
-  let created = 0;
-  await db.transaction(async (tx) => {
-    for (const teamId of teamIds) {
-      const squad = squads.get(teamId);
-      if (!squad || squad.length === 0) continue;
-
-      const owned = new Set(squad.map((p) => p.id));
-      const carried = latestPrior.get(teamId)?.picks ?? [];
-      const usable = carried.filter((pick) => owned.has(pick.playerId));
-
-      // A partial carry-forward can't be trusted to be a legal XI, so rebuild.
-      let picks: PriorPick[];
-      if (usable.length === carried.length && carried.length >= startingSize) {
-        picks = usable;
-      } else {
-        const initial = buildInitialLineup(squad);
-        picks = [...initial.starters, ...initial.bench].map((p, index) => ({
-          playerId: p.id,
-          slot: index + 1,
-          isCaptain: p.id === initial.captainId,
-          isVice: p.id === initial.viceId,
-        }));
-      }
-      if (picks.length === 0) continue;
-
-      const [lineup] = await tx
-        .insert(gameweekLineups)
-        .values({ fantasyTeamId: teamId, gameweekId })
-        .onConflictDoNothing({
-          target: [gameweekLineups.fantasyTeamId, gameweekLineups.gameweekId],
-        })
-        .returning();
-      // Another finalize (or a manager saving) won the race — leave theirs.
-      if (!lineup) continue;
-
-      await tx.insert(lineupPicks).values(
-        picks.map((pick) => ({
-          lineupId: lineup.id,
-          playerId: pick.playerId,
-          slot: pick.slot,
-          isCaptain: pick.isCaptain,
-          isVice: pick.isVice,
-        }))
-      );
-      created++;
-    }
-  });
-  return created;
-}
 
 /**
  * Reverses runFinalizeGameweek so a wrong result can be corrected.

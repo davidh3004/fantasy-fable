@@ -19,6 +19,7 @@ import {
 } from "@/lib/game/queries";
 import { effectiveFixtureStatus } from "@/lib/game/status";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
+import { ensureLineupsForGameweek } from "@/lib/game/ensure-lineups";
 import {
   getSeasonGameweeks,
   getSeasonStatLinesByGameweek,
@@ -136,6 +137,16 @@ export default async function ManagerTeamPage({
   }
 
   const isFinalized = startedGameweek.status === "finished";
+
+  // Same freeze as the team page — only gameweeks whose deadline has passed
+  // reach this point, and a rival's page is as likely as your own to be the
+  // first read after one does.
+  await ensureLineupsForGameweek(
+    startedGameweek.id,
+    season.id,
+    settings.startingSize
+  );
+
   const [picks, gameweekFixtures] = await Promise.all([
     getManagerLineup(teamId, startedGameweek.id),
     getFixturesForGameweek(startedGameweek.id),
