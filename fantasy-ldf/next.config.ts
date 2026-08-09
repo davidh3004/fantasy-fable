@@ -39,6 +39,17 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(withNextIntl(nextConfig), {
   silent: !process.env.CI,
+  /**
+   * Browser events go out through our own origin instead of sentry.io, which
+   * ad blockers block by domain — without this a share of real users report
+   * nothing at all, silently.
+   *
+   * A fixed path rather than `true` (which mints a random one per build) so
+   * proxy.ts can let it through without a session: errors on /login matter as
+   * much as the rest, and the middleware would otherwise bounce them. Keep
+   * this value in step with TUNNEL_PATH there.
+   */
+  tunnelRoute: "/ldf-monitoring",
   // Source maps upload only when an auth token is present (prod/CI); the
   // build works fine without it.
   org: process.env.SENTRY_ORG,
