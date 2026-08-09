@@ -26,7 +26,12 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          # Matches the Node developers and Dependabot use. On 20 the runner
+          # gets npm 10, which insists on a nested @swc/helpers entry that
+          # npm 11 dedupes away — so any lock file written by a modern npm
+          # failed `npm ci` here, which is what kept every Dependabot npm pull
+          # request red regardless of what it was bumping.
+          node-version: 22
           cache: npm
           cache-dependency-path: fantasy-ldf/package-lock.json
 
