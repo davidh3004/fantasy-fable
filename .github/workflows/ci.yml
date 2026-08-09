@@ -26,14 +26,18 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          # Matches the Node developers and Dependabot use. On 20 the runner
-          # gets npm 10, which insists on a nested @swc/helpers entry that
-          # npm 11 dedupes away — so any lock file written by a modern npm
-          # failed `npm ci` here, which is what kept every Dependabot npm pull
-          # request red regardless of what it was bumping.
+          # Matches what developers here run.
           node-version: 22
           cache: npm
           cache-dependency-path: fantasy-ldf/package-lock.json
+
+      # Node 22 bundles npm 10, and npm 10 insists on a nested @swc/helpers
+      # entry for next-intl that npm 11 dedupes away. Dependabot writes its
+      # lock files with npm 11, so every one of its pull requests failed
+      # `npm ci` here on a lock file that is perfectly valid — the mismatch was
+      # never about the packages being bumped. Pin the major that writes the
+      # lock rather than inheriting whatever Node happens to bundle.
+      - run: npm install -g npm@11
 
       - run: npm ci
 
