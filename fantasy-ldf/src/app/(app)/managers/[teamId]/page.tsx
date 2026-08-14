@@ -187,7 +187,10 @@ export default async function ManagerTeamPage({
   }
 
   const opponents: Record<string, OpponentInfo> = {};
+  // Kicked off at some point — these have points worth showing.
   const liveClubs = new Set<string>();
+  // On the pitch *right now* — these get the gold treatment.
+  const playingClubs = new Set<string>();
   for (const fixture of gameweekFixtures) {
     opponents[fixture.homeClubId] = {
       opp: fixture.awayShort,
@@ -208,7 +211,16 @@ export default async function ManagerTeamPage({
       liveClubs.add(fixture.homeClubId);
       liveClubs.add(fixture.awayClubId);
     }
+    if (status === "live") {
+      playingClubs.add(fixture.homeClubId);
+      playingClubs.add(fixture.awayClubId);
+    }
   }
+  // Same gold ring as your own team page: watching a rival during a live
+  // gameweek, you could not tell which of their players were on the pitch.
+  const livePlayerIds = picks
+    .filter((pick) => playingClubs.has(pick.clubId))
+    .map((pick) => pick.id);
 
   const captainId = picks.find((p) => p.isCaptain)?.id ?? "";
   const viceId = picks.find((p) => p.isVice)?.id ?? "";
@@ -292,6 +304,7 @@ export default async function ManagerTeamPage({
         viceId={viceId}
         opponents={opponents}
         pointsByPlayer={pointsByPlayer}
+        livePlayerIds={livePlayerIds}
         statsByGameweek={statsByGameweek}
         rules={ruleRows}
         viewingGameweekId={startedGameweek.id}

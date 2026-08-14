@@ -20,6 +20,8 @@ type ReadonlyPitchProps = {
   viceId: string;
   opponents: Record<string, OpponentInfo>;
   pointsByPlayer: Record<string, number>;
+  /** playerIds whose match is in play right now (gold treatment). */
+  livePlayerIds?: string[];
   /** Per-gameweek stat lines, so the modal can step through the season. */
   statsByGameweek?: GameweekStatLines[];
   rules?: ScoringRuleRow[];
@@ -35,12 +37,17 @@ export function ReadonlyPitch({
   viceId,
   opponents,
   pointsByPlayer,
+  livePlayerIds,
   statsByGameweek,
   rules,
   viewingGameweekId,
 }: ReadonlyPitchProps) {
   const t = useTranslations("team");
   const tPos = useTranslations("positionsShort");
+  const livePlayers = useMemo(
+    () => new Set(livePlayerIds ?? []),
+    [livePlayerIds]
+  );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -98,6 +105,7 @@ export function ReadonlyPitch({
         caption={caption(player)}
         captain={player.id === captainId}
         vice={player.id === viceId}
+        live={livePlayers.has(player.id)}
         benchOrder={benchOrder}
         onClick={() => setSelectedId(player.id)}
       />
