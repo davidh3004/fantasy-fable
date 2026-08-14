@@ -58,6 +58,8 @@ export type AdminGameweek = {
   number: number;
   deadline: Date;
   status: "upcoming" | "locked" | "finished";
+  /** Null on a gameweek that was never scored, whatever its status says. */
+  finalizedAt: Date | null;
   fixtures: AdminFixture[];
 };
 
@@ -184,7 +186,9 @@ export function GameweeksManager({
                 {formatDate(gw.deadline)}
               </span>
               <span className="ml-auto flex gap-1">
-                {gw.status !== "finished" && (
+                {/* Offered until the gameweek has actually been scored — a
+                    status of "finished" with nothing banked still needs it. */}
+                {gw.finalizedAt == null && (
                   <ConfirmDialog
                     trigger={
                       <Button
@@ -205,7 +209,7 @@ export function GameweeksManager({
                     onConfirm={() => runAction(() => finalizeGameweek(gw.id))}
                   />
                 )}
-                {gw.status === "finished" && (
+                {gw.finalizedAt != null && (
                   <ConfirmDialog
                     trigger={
                       <Button
@@ -407,7 +411,18 @@ export function GameweeksManager({
                   defaultValue={editingGw?.status ?? "upcoming"}
                   className={selectClass}
                 >
-                  {(["upcoming", "locked", "finished"] as const).map((s) => (
+                  {/* "Finished" is only offered for a gameweek that already is
+                      one, so editing its number or deadline doesn't force a
+                      downgrade. Reaching that state is finalize's job. */}
+                  {(
+                    [
+                      "upcoming",
+                      "locked",
+                      ...(editingGw?.status === "finished"
+                        ? (["finished"] as const)
+                        : []),
+                    ] as const
+                  ).map((s) => (
                     <option key={s} value={s}>
                       {t(`status.${s}`)}
                     </option>

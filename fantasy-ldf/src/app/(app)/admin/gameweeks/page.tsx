@@ -40,6 +40,7 @@ export default async function AdminGameweeksPage() {
         number: gw.number,
         deadline: gw.deadline,
         status: gw.status,
+        finalizedAt: gw.finalizedAt,
         fixtures: fixtureRows.map((f) => ({
           id: f.id,
           gameweekId: gw.id,

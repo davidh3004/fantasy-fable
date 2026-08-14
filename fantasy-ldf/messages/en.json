@@ -468,6 +468,7 @@
         "not_locked": "The gameweek hasn't closed yet. Wait for the deadline.",
         "fixtures_pending": "Some fixtures are missing results. Enter them all first.",
         "already_finished": "The gameweek was already finalized.",
+        "finalize_required": "To close a gameweek use Finalize — that's what scores the points.",
         "unknown": "Something went wrong. Try again.",
         "gameweek_finished": "The gameweek is already finalized and can't be deleted.",
         "not_finished": "The gameweek isn't finalized, so there's nothing to undo.",

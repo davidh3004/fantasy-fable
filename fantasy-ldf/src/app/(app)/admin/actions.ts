@@ -274,6 +274,26 @@ export async function saveGameweek(
     return fail("validation");
   }
 
+  /**
+   * "Finished" is not a status you type — it is what finalizing produces.
+   * Setting it by hand marked the gameweek over while nobody was scored: no
+   * points on any pick, no points on any lineup, season totals left at zero,
+   * and every team page showing fixtures for a gameweek that had already been
+   * played. Editing a gameweek that is already finished stays allowed, so the
+   * number and deadline remain correctable; only the transition into finished
+   * is refused. Use the finalize action, or undo it first.
+   */
+  if (status === "finished") {
+    const [current] = id
+      ? await db
+          .select({ status: gameweeks.status })
+          .from(gameweeks)
+          .where(eq(gameweeks.id, id))
+          .limit(1)
+      : [];
+    if (current?.status !== "finished") return fail("finalize_required");
+  }
+
   try {
     if (id) {
       await db

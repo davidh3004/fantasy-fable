@@ -25,6 +25,7 @@ import {
 } from "@/lib/game/queries";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
 import { ensureLineupsForGameweek } from "@/lib/game/ensure-lineups";
+import { resolveGameweekLineupPoints } from "@/lib/game/lineup-points";
 import { effectiveFixtureStatus } from "@/lib/game/status";
 import { db } from "@/db";
 import { scoringRules } from "@/db/schema";
@@ -181,12 +182,17 @@ export default async function TeamPage({
   ]);
 
   // Points to show under each player.
-  const pointsByPlayer: Record<string, number> = {};
+  let pointsByPlayer: Record<string, number> = {};
   if (isFinalized) {
-    // Finalized snapshot (captain ×2 baked in).
-    for (const pick of picks) {
-      if (pick.points != null) pointsByPlayer[pick.playerId] = pick.points;
-    }
+    // The finalized snapshot when there is one (captain ×2 baked in), the match
+    // stats when there isn't. Either way every player in the lineup gets a
+    // number: a finished gameweek must never show fixtures again, and a player
+    // who didn't play scores 0.
+    ({ pointsByPlayer } = await resolveGameweekLineupPoints(
+      selected.id,
+      picks.map((pick) => ({ ...pick, bankedPoints: pick.points })),
+      squadSettings
+    ));
   } else if (isLive) {
     // Live: raw match points for players whose club has kicked off.
     const livePoints = await getGameweekPlayerPoints(selected.id);

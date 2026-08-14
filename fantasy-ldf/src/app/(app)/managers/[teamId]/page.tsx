@@ -6,13 +6,12 @@ import { getTranslations } from "next-intl/server";
 import { getSessionUser } from "@/lib/supabase/user";
 import { ReadonlyPitch } from "@/components/team/readonly-pitch";
 import type { OpponentInfo } from "@/components/team/lineup-editor";
-import { resolveLineup, type EnginePick } from "@/lib/game/engine";
+import { resolveGameweekLineupPoints } from "@/lib/game/lineup-points";
 import {
   getActiveSeasonContext,
   getFantasyTeamPublic,
   getFixturesForGameweek,
   getGameweekPlayerPoints,
-  getGameweekPlayerStats,
   getManagerLineup,
   toSquadSettings,
   type ManagerPick,
@@ -219,19 +218,21 @@ export default async function ManagerTeamPage({
   const pointsByPlayer: Record<string, number> = {};
 
   if (isFinalized) {
-    // Run the engine so the displayed XI reflects auto-subs: a starter who
-    // didn't play is replaced on the pitch by the bench player who counted.
-    const stats = await getGameweekPlayerStats(startedGameweek.id);
-    const enginePicks: EnginePick[] = picks.map((p) => ({
-      playerId: p.id,
-      slot: p.slot,
-      isCaptain: p.isCaptain,
-      isVice: p.isVice,
-      position: p.position,
-      points: stats.get(p.id)?.points ?? 0,
-      minutes: stats.get(p.id)?.minutes ?? 0,
-    }));
-    const resolved = resolveLineup(enginePicks, squadSettings);
+    // Same source of truth as your own team page, so the two can't disagree
+    // about what a player scored. The engine also tells us the XI to draw: a
+    // starter who didn't play is replaced on the pitch by the bench player who
+    // counted for them.
+    const resolved = await resolveGameweekLineupPoints(
+      startedGameweek.id,
+      picks.map((p) => ({
+        playerId: p.id,
+        slot: p.slot,
+        isCaptain: p.isCaptain,
+        isVice: p.isVice,
+        bankedPoints: p.points,
+      })),
+      squadSettings
+    );
 
     const startersAfter = picks.filter((p) =>
       resolved.finalStarterIds.has(p.id)
@@ -246,9 +247,7 @@ export default async function ManagerTeamPage({
 
     starterIds = startersAfter.map((p) => p.id);
     benchIds = benchAfter.map((p) => p.id);
-    for (const p of picks) {
-      pointsByPlayer[p.id] = resolved.pickPoints.get(p.id) ?? 0;
-    }
+    Object.assign(pointsByPlayer, resolved.pointsByPlayer);
   } else {
     // Live / locked but not finalized: show the chosen XI as saved, with
     // live raw points for clubs that have kicked off.

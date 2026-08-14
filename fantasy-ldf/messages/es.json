@@ -468,6 +468,7 @@
         "not_locked": "La jornada aún no cierra. Espera a que pase la fecha límite.",
         "fixtures_pending": "Faltan partidos por registrar. Completa todos los resultados primero.",
         "already_finished": "La jornada ya fue finalizada.",
+        "finalize_required": "Para cerrar una jornada usa Finalizar — es lo que reparte los puntos.",
         "unknown": "Algo salió mal. Intenta de nuevo.",
         "gameweek_finished": "La jornada ya fue finalizada y no se puede eliminar.",
         "not_finished": "La jornada no está finalizada, no hay nada que deshacer.",

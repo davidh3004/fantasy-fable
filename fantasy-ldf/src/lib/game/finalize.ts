@@ -207,7 +207,13 @@ export async function runFinalizeGameweek(
     )
     .limit(1);
   if (!gameweek) return { error: "validation" };
-  if (gameweek.status === "finished") return { error: "already_finished" };
+  // Gated on finalizedAt, not on the status: a gameweek whose status was set
+  // to finished by hand has never been scored, and refusing to finalize it
+  // would leave it permanently at zero points with no way out but an undo of
+  // something that never happened.
+  if (gameweek.status === "finished" && gameweek.finalizedAt != null) {
+    return { error: "already_finished" };
+  }
   if (gameweek.deadline > new Date()) return { error: "not_locked" };
 
   // Every fixture must have a published result — a live or scheduled one means
