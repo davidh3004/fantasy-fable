@@ -273,9 +273,13 @@ export default async function ManagerTeamPage({
     benchIds = bench.map((p) => p.id);
 
     const livePoints = await getGameweekPlayerPoints(startedGameweek.id);
+    // Doubled for the captain, same as your own team page and same as the
+    // finalized numbers the engine produces. The vice waits: they only double
+    // if the captain finishes the gameweek without playing.
     for (const pick of picks) {
       if (liveClubs.has(pick.clubId)) {
-        pointsByPlayer[pick.id] = livePoints.get(pick.id) ?? 0;
+        const scored = livePoints.get(pick.id) ?? 0;
+        pointsByPlayer[pick.id] = pick.id === captainId ? scored * 2 : scored;
       }
     }
   }

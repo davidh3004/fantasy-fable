@@ -201,11 +201,25 @@ export default async function TeamPage({
       squadSettings
     ));
   } else if (isLive) {
-    // Live: raw match points for players whose club has kicked off.
+    // Live: match points for players whose club has kicked off.
     const livePoints = await getGameweekPlayerPoints(selected.id);
+    /**
+     * The captain's card shows what they are worth to you, which is twice what
+     * they scored. The finalized numbers have always been doubled — the engine
+     * bakes the multiplier into every pick — so leaving the live ones raw made
+     * the captain's card halve itself the moment the gameweek was scored, and
+     * put the pitch out of step with the total above it, which counts the
+     * double from the first minute.
+     *
+     * The vice is left alone: they only double if the captain ends the
+     * gameweek on zero minutes, and mid-match that isn't known yet.
+     */
+    const captainPlayerId = picks.find((pick) => pick.isCaptain)?.playerId;
     for (const player of squad) {
       if (liveClubs.has(player.clubId)) {
-        pointsByPlayer[player.id] = livePoints.get(player.id) ?? 0;
+        const scored = livePoints.get(player.id) ?? 0;
+        pointsByPlayer[player.id] =
+          player.id === captainPlayerId ? scored * 2 : scored;
       }
     }
   }
