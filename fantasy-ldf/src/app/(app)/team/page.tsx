@@ -183,12 +183,19 @@ export default async function TeamPage({
 
   // Points to show under each player.
   let pointsByPlayer: Record<string, number> = {};
+  /**
+   * Who counted after auto-substitutions, once the gameweek has been scored.
+   * Null while it is still being played: a starter on zero minutes at half
+   * time may yet come on, and moving the bench around under the manager on
+   * every refresh would be guessing at a result that isn't in.
+   */
+  let finalStarterIds: Set<string> | null = null;
   if (isFinalized) {
     // The finalized snapshot when there is one (captain ×2 baked in), the match
     // stats when there isn't. Either way every player in the lineup gets a
     // number: a finished gameweek must never show fixtures again, and a player
     // who didn't play scores 0.
-    ({ pointsByPlayer } = await resolveGameweekLineupPoints(
+    ({ pointsByPlayer, finalStarterIds } = await resolveGameweekLineupPoints(
       selected.id,
       picks.map((pick) => ({ ...pick, bankedPoints: pick.points })),
       squadSettings
@@ -214,8 +221,31 @@ export default async function TeamPage({
   let captainId: string;
   let viceId: string;
   if (picks.length > 0) {
-    const starters = picks.filter((p) => p.slot <= squadSettings.startingSize);
-    const bench = picks.filter((p) => p.slot > squadSettings.startingSize);
+    /**
+     * Once the gameweek is scored, the pitch shows the eleven that actually
+     * counted, not the one that was saved. A bench player who came on for a
+     * starter who never played earns those points, and leaving them on the
+     * bench with a number beside their name made the pitch disagree with the
+     * total above it — you could add up the eleven on show and not reach it.
+     */
+    const positionById = new Map(squad.map((p) => [p.id, p.position]));
+    const counted = finalStarterIds;
+    const starters = counted
+      ? picks.filter((p) => counted.has(p.playerId))
+      : picks.filter((p) => p.slot <= squadSettings.startingSize);
+    const bench = counted
+      ? picks
+          .filter((p) => !counted.has(p.playerId))
+          // Reserve goalkeeper first, the rest in their saved order — the same
+          // shape the bench always has, so the numbering still reads as
+          // substitution priority.
+          .sort((a, b) => {
+            const aGk = positionById.get(a.playerId) === "GK";
+            const bGk = positionById.get(b.playerId) === "GK";
+            if (aGk !== bGk) return aGk ? -1 : 1;
+            return a.slot - b.slot;
+          })
+      : picks.filter((p) => p.slot > squadSettings.startingSize);
     lineup = {
       starterIds: starters.map((p) => p.playerId),
       benchIds: bench.map((p) => p.playerId),
