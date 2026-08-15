@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { ArrowDown, ArrowUp, CalendarClock } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, CalendarClock } from "lucide-react";
 import { DeadlineCountdown } from "@/components/home/deadline-countdown";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,10 @@ type GameweekHeroProps = {
   played: { played: number; total: number } | null;
   deadline: Date | null;
   deadlineLabel: string | null;
+  /** The gameweek the deadline belongs to — named while one is in play. */
+  nextGameweekNumber: number | null;
+  /** Coarse "6d 12h" form, for the line under the in-play notice. */
+  nextDeadlineShort: string | null;
 };
 
 export async function GameweekHero({
@@ -29,6 +33,8 @@ export async function GameweekHero({
   played,
   deadline,
   deadlineLabel,
+  nextGameweekNumber,
+  nextDeadlineShort,
 }: GameweekHeroProps) {
   const t = await getTranslations("home");
   const tTeam = await getTranslations("team");
@@ -129,17 +135,43 @@ export async function GameweekHero({
             </div>
           </dl>
 
-          {deadline && deadlineLabel && (
-            <div className="flex flex-col items-center gap-2.5 border-t border-border pt-4 text-center">
-              <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
-                <CalendarClock className="size-3.5" aria-hidden />
-                {t("deadline.subtitle")}
+          {/* While a gameweek is in play, counting down to the next deadline
+              answers a question nobody is asking: this squad is already
+              locked, and the clock ticking toward a gameweek that hasn't
+              started reads as if it were this one's. Say what is happening
+              instead, and keep the deadline as a footnote. */}
+          {state === "live" ? (
+            <div className="flex flex-col items-center gap-1.5 border-t border-border pt-4 text-center">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-red-400">
+                <Activity className="size-3.5" aria-hidden />
+                {t("live.title")}
               </p>
-              <DeadlineCountdown deadline={deadline.toISOString()} />
-              <p className="text-xs capitalize text-muted-foreground">
-                {deadlineLabel}
+              <p className="max-w-64 text-xs text-muted-foreground">
+                {t("live.body")}
               </p>
+              {nextGameweekNumber != null && nextDeadlineShort && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("live.nextDeadline", {
+                    number: nextGameweekNumber,
+                    time: nextDeadlineShort,
+                  })}
+                </p>
+              )}
             </div>
+          ) : (
+            deadline &&
+            deadlineLabel && (
+              <div className="flex flex-col items-center gap-2.5 border-t border-border pt-4 text-center">
+                <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                  <CalendarClock className="size-3.5" aria-hidden />
+                  {t("deadline.subtitle")}
+                </p>
+                <DeadlineCountdown deadline={deadline.toISOString()} />
+                <p className="text-xs capitalize text-muted-foreground">
+                  {deadlineLabel}
+                </p>
+              </div>
+            )
           )}
         </div>
       </div>

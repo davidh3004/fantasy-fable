@@ -162,6 +162,8 @@ export default async function HomePage() {
         deadlineLabel={
           nextGameweek ? formatDeadline(nextGameweek.deadline, locale) : null
         }
+        nextGameweekNumber={nextGameweek?.number ?? null}
+        nextDeadlineShort={deadlineShort}
       />
 
       <StatusChips

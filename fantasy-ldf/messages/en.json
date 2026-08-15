@@ -183,6 +183,11 @@
       "minutes": "min",
       "seconds": "sec"
     },
+    "live": {
+      "title": "Gameweek in play",
+      "body": "Your lineup is locked. Changes you make now count for the next gameweek.",
+      "nextDeadline": "Gameweek {number} closes in {time}"
+    },
     "fixtures": {
       "title": "Matches · Gameweek {number}",
       "empty": "No matches scheduled."
@@ -434,6 +439,49 @@
     "signOutTitle": "Sign out?",
     "signOutBody": "You'll need to sign in again to manage your team.",
     "cancel": "Cancel"
+  },
+  "rules": {
+    "title": "Game rules",
+    "intro": "Everything below is what this season is actually set to — if the league changes a number, this page changes with it.",
+    "squad": {
+      "title": "Your squad",
+      "size": "{total} players: {gk} GK, {def} DEF, {mid} MID and {fwd} FWD.",
+      "budget": "A budget of {budget} to sign all of them.",
+      "maxPerClub": "At most {max} players from the same real club.",
+      "formation": "Each gameweek you field {starters}: 1 goalkeeper and at least {def} DEF, {mid} MID and {fwd} FWD.",
+      "bench": "The other {bench} sit on the bench, in order — that order decides who comes on."
+    },
+    "scoring": {
+      "title": "Points",
+      "intro": "Players score from what they do in the real match. Anyone who plays 0 minutes scores nothing at all.",
+      "event": "Event",
+      "bonus": "Bonus — the 3 best players of each match",
+      "note": "Saves and goals conceded count in blocks: every 3 saves, every 2 goals conceded. Clean sheets need 60 minutes played."
+    },
+    "captain": {
+      "title": "Captain and substitutions",
+      "double": "Your captain scores double.",
+      "vice": "If the captain doesn't play a single minute, the vice-captain doubles instead.",
+      "autoSubs": "A starter who doesn't play is replaced by the first bench player who did, as long as the formation stays legal. The reserve goalkeeper only ever replaces the goalkeeper."
+    },
+    "transfers": {
+      "title": "Transfers",
+      "free": "{count} free transfer per gameweek.",
+      "bank": "Unused ones bank up to {max}.",
+      "hit": "Every transfer beyond your free ones costs {cost} points.",
+      "preSeason": "Before the first gameweek starts, transfers are unlimited and free."
+    },
+    "gameweeks": {
+      "title": "Gameweeks",
+      "deadline": "The deadline is {minutes} minutes before the first kick-off of the gameweek.",
+      "locked": "Once it passes, your lineup is locked and points start counting. Anything you change from then on counts for the next gameweek.",
+      "finished": "When every result is in, the gameweek is finalized: substitutions are applied, points are banked and the table is updated."
+    },
+    "leagues": {
+      "title": "Leagues",
+      "overall": "Every team is in the overall league, ranked by total points.",
+      "private": "You can also create private leagues and invite people with a code."
+    }
   },
   "admin": {
     "title": "Administration",
