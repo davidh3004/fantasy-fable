@@ -183,6 +183,11 @@
       "minutes": "min",
       "seconds": "seg"
     },
+    "live": {
+      "title": "Jornada en juego",
+      "body": "Tu alineación está bloqueada. Los cambios que hagas cuentan para la próxima jornada.",
+      "nextDeadline": "La jornada {number} cierra en {time}"
+    },
     "fixtures": {
       "title": "Partidos · Jornada {number}",
       "empty": "Sin partidos programados."
@@ -435,6 +440,49 @@
     "signOutBody": "Tendrás que iniciar sesión de nuevo para gestionar tu equipo.",
     "cancel": "Cancelar"
   },
+  "rules": {
+    "title": "Reglas del juego",
+    "intro": "Todo lo de abajo es lo que esta temporada tiene configurado de verdad — si la liga cambia un número, esta página cambia con él.",
+    "squad": {
+      "title": "Tu plantilla",
+      "size": "{total} jugadores: {gk} POR, {def} DEF, {mid} MED y {fwd} DEL.",
+      "budget": "Un presupuesto de {budget} para ficharlos a todos.",
+      "maxPerClub": "Máximo {max} jugadores de un mismo club real.",
+      "formation": "Cada jornada alineas {starters}: 1 portero y al menos {def} DEF, {mid} MED y {fwd} DEL.",
+      "bench": "Los otros {bench} van a la banca, en orden — ese orden decide quién entra."
+    },
+    "scoring": {
+      "title": "Puntos",
+      "intro": "Los jugadores puntúan por lo que hacen en el partido real. El que juega 0 minutos no suma nada.",
+      "event": "Evento",
+      "bonus": "Bonus — los 3 mejores de cada partido",
+      "note": "Las atajadas y los goles en contra cuentan por bloques: cada 3 atajadas, cada 2 goles recibidos. La portería a cero exige 60 minutos jugados."
+    },
+    "captain": {
+      "title": "Capitán y cambios",
+      "double": "Tu capitán duplica sus puntos.",
+      "vice": "Si el capitán no juega ni un minuto, el que duplica es el vicecapitán.",
+      "autoSubs": "Un titular que no juega lo reemplaza el primero de la banca que sí jugó, siempre que la formación siga siendo válida. El portero suplente solo entra por el portero."
+    },
+    "transfers": {
+      "title": "Fichajes",
+      "free": "{count} fichaje libre por jornada.",
+      "bank": "Los que no uses se acumulan hasta {max}.",
+      "hit": "Cada fichaje de más te cuesta {cost} puntos.",
+      "preSeason": "Antes de que arranque la primera jornada, los fichajes son ilimitados y gratis."
+    },
+    "gameweeks": {
+      "title": "Jornadas",
+      "deadline": "El cierre es {minutes} minutos antes del primer saque de la jornada.",
+      "locked": "Al pasar, tu alineación queda bloqueada y los puntos empiezan a contar. Lo que cambies desde ahí cuenta para la próxima jornada.",
+      "finished": "Cuando están todos los resultados, la jornada se finaliza: se aplican los cambios, se guardan los puntos y se actualiza la tabla."
+    },
+    "leagues": {
+      "title": "Ligas",
+      "overall": "Todos los equipos están en la liga general, ordenada por puntos totales.",
+      "private": "También puedes crear ligas privadas e invitar gente con un código."
+    }
+  },
   "admin": {
     "title": "Administración",
     "nav": {
@@ -468,6 +516,7 @@
         "not_locked": "La jornada aún no cierra. Espera a que pase la fecha límite.",
         "fixtures_pending": "Faltan partidos por registrar. Completa todos los resultados primero.",
         "already_finished": "La jornada ya fue finalizada.",
+        "finalize_required": "Para cerrar una jornada usa Finalizar — es lo que reparte los puntos.",
         "unknown": "Algo salió mal. Intenta de nuevo.",
         "gameweek_finished": "La jornada ya fue finalizada y no se puede eliminar.",
         "not_finished": "La jornada no está finalizada, no hay nada que deshacer.",
@@ -597,8 +646,22 @@
       "errors": {
         "forbidden": "No tienes permisos de administrador.",
         "validation": "Revisa el marcador y las estadísticas.",
+        "already_published": "El partido está publicado. Reábrelo para cambiarle el estado.",
         "unknown": "Algo salió mal. Intenta de nuevo."
       },
+      "stateTitle": "Estado del partido",
+      "state": {
+        "scheduled": "Programado",
+        "live": "En vivo",
+        "finished": "Finalizado"
+      },
+      "stateHint": "Se pone en vivo solo al llegar la hora de inicio ({kickoff}). Guardar la alineación o el avance no lo pone en vivo. Publicar el resultado es lo que lo cierra.",
+      "liveByKickoff": "por la hora de inicio",
+      "liveManual": "puesto a mano",
+      "markLive": "Poner en vivo",
+      "clearLive": "Quitar en vivo",
+      "markedLive": "Partido en vivo.",
+      "markedScheduled": "Se quitó el en vivo manual.",
       "tabs": {
         "lineups": "Alineaciones",
         "live": "En vivo",

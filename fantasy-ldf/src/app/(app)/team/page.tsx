@@ -25,6 +25,7 @@ import {
 } from "@/lib/game/queries";
 import { getTeamGameweekPoints } from "@/lib/game/gameweek-points";
 import { ensureLineupsForGameweek } from "@/lib/game/ensure-lineups";
+import { resolveGameweekLineupPoints } from "@/lib/game/lineup-points";
 import { effectiveFixtureStatus } from "@/lib/game/status";
 import { db } from "@/db";
 import { scoringRules } from "@/db/schema";
@@ -181,18 +182,44 @@ export default async function TeamPage({
   ]);
 
   // Points to show under each player.
-  const pointsByPlayer: Record<string, number> = {};
+  let pointsByPlayer: Record<string, number> = {};
+  /**
+   * Who counted after auto-substitutions, once the gameweek has been scored.
+   * Null while it is still being played: a starter on zero minutes at half
+   * time may yet come on, and moving the bench around under the manager on
+   * every refresh would be guessing at a result that isn't in.
+   */
+  let finalStarterIds: Set<string> | null = null;
   if (isFinalized) {
-    // Finalized snapshot (captain ×2 baked in).
-    for (const pick of picks) {
-      if (pick.points != null) pointsByPlayer[pick.playerId] = pick.points;
-    }
+    // The finalized snapshot when there is one (captain ×2 baked in), the match
+    // stats when there isn't. Either way every player in the lineup gets a
+    // number: a finished gameweek must never show fixtures again, and a player
+    // who didn't play scores 0.
+    ({ pointsByPlayer, finalStarterIds } = await resolveGameweekLineupPoints(
+      selected.id,
+      picks.map((pick) => ({ ...pick, bankedPoints: pick.points })),
+      squadSettings
+    ));
   } else if (isLive) {
-    // Live: raw match points for players whose club has kicked off.
+    // Live: match points for players whose club has kicked off.
     const livePoints = await getGameweekPlayerPoints(selected.id);
+    /**
+     * The captain's card shows what they are worth to you, which is twice what
+     * they scored. The finalized numbers have always been doubled — the engine
+     * bakes the multiplier into every pick — so leaving the live ones raw made
+     * the captain's card halve itself the moment the gameweek was scored, and
+     * put the pitch out of step with the total above it, which counts the
+     * double from the first minute.
+     *
+     * The vice is left alone: they only double if the captain ends the
+     * gameweek on zero minutes, and mid-match that isn't known yet.
+     */
+    const captainPlayerId = picks.find((pick) => pick.isCaptain)?.playerId;
     for (const player of squad) {
       if (liveClubs.has(player.clubId)) {
-        pointsByPlayer[player.id] = livePoints.get(player.id) ?? 0;
+        const scored = livePoints.get(player.id) ?? 0;
+        pointsByPlayer[player.id] =
+          player.id === captainPlayerId ? scored * 2 : scored;
       }
     }
   }
@@ -208,8 +235,31 @@ export default async function TeamPage({
   let captainId: string;
   let viceId: string;
   if (picks.length > 0) {
-    const starters = picks.filter((p) => p.slot <= squadSettings.startingSize);
-    const bench = picks.filter((p) => p.slot > squadSettings.startingSize);
+    /**
+     * Once the gameweek is scored, the pitch shows the eleven that actually
+     * counted, not the one that was saved. A bench player who came on for a
+     * starter who never played earns those points, and leaving them on the
+     * bench with a number beside their name made the pitch disagree with the
+     * total above it — you could add up the eleven on show and not reach it.
+     */
+    const positionById = new Map(squad.map((p) => [p.id, p.position]));
+    const counted = finalStarterIds;
+    const starters = counted
+      ? picks.filter((p) => counted.has(p.playerId))
+      : picks.filter((p) => p.slot <= squadSettings.startingSize);
+    const bench = counted
+      ? picks
+          .filter((p) => !counted.has(p.playerId))
+          // Reserve goalkeeper first, the rest in their saved order — the same
+          // shape the bench always has, so the numbering still reads as
+          // substitution priority.
+          .sort((a, b) => {
+            const aGk = positionById.get(a.playerId) === "GK";
+            const bGk = positionById.get(b.playerId) === "GK";
+            if (aGk !== bGk) return aGk ? -1 : 1;
+            return a.slot - b.slot;
+          })
+      : picks.filter((p) => p.slot > squadSettings.startingSize);
     lineup = {
       starterIds: starters.map((p) => p.playerId),
       benchIds: bench.map((p) => p.playerId),

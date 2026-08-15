@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { asc, eq, or } from "drizzle-orm";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { db } from "@/db";
 import {
   clubs,
@@ -16,6 +16,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { MatchConsole } from "@/components/admin/match-console";
 import type { LiveStatLine } from "@/app/(app)/admin/actions";
 import { getActiveSeasonContext } from "@/lib/game/queries";
+import { formatKickoff } from "@/lib/game/format";
+import { effectiveFixtureStatus } from "@/lib/game/status";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("admin.nav");
@@ -28,7 +30,10 @@ export default async function AdminResultEntryPage({
   params: Promise<{ fixtureId: string }>;
 }) {
   const { fixtureId } = await params;
-  const t = await getTranslations("admin.result");
+  const [t, locale] = await Promise.all([
+    getTranslations("admin.result"),
+    getLocale(),
+  ]);
 
   const { season, settings } = await getActiveSeasonContext();
 
@@ -117,6 +122,12 @@ export default async function AdminResultEntryPage({
       <MatchConsole
         fixtureId={fixture.id}
         kickoff={fixture.kickoff.toISOString()}
+        kickoffLabel={formatKickoff(fixture.kickoff, locale)}
+        storedStatus={fixture.status}
+        // Computed here rather than in the browser: the console would
+        // otherwise disagree with the server about "has kickoff passed" for
+        // the length of a hydration.
+        effectiveStatus={effectiveFixtureStatus(fixture)}
         isFinished={fixture.status === "finished"}
         homeName={fixture.homeName}
         awayName={fixture.awayName}

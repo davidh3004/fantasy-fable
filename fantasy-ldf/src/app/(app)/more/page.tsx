@@ -66,11 +66,14 @@ export default async function MorePage() {
           <span className="flex-1 text-sm font-medium">{tNav("matches")}</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 opacity-50">
+        <Link
+          href="/rules"
+          className="flex items-center gap-3 border-b border-border px-4 py-3.5 transition-colors hover:bg-accent"
+        >
           <BookOpen className="size-4.5 text-muted-foreground" aria-hidden />
           <span className="flex-1 text-sm font-medium">{t("rules")}</span>
-          <span className="text-xs text-muted-foreground">{t("soon")}</span>
-        </div>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
         <div className="flex items-center gap-3 px-4 py-3.5">
           <Languages className="size-4.5 shrink-0 text-muted-foreground" aria-hidden />
           <span className="min-w-0 flex-1 truncate text-sm font-medium">
