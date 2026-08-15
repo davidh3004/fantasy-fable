@@ -98,10 +98,20 @@ export async function createFantasyTeam(
     if (!club) return { error: "invalid_squad" };
   }
 
+  /**
+   * Never falls back to the email address.
+   *
+   * This name is public — it is what the standings, the league tables and your
+   * team page show every other manager. Taking it from the local part of an
+   * email turned `juan.perez@gmail.com` into a manager called "juan.perez",
+   * publishing a piece of personal data the player never chose to share and
+   * handing anyone a very good guess at their address. The registration form
+   * asks for a username and Google supplies a name, so the fallback is only
+   * ever reached by an account that gave us neither.
+   */
   const displayName =
     (user.user_metadata.display_name as string | undefined) ??
     (user.user_metadata.name as string | undefined) ??
-    user.email?.split("@")[0] ??
     "Míster";
 
   const nextGameweek = await getNextGameweek(season.id);

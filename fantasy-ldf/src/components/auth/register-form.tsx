@@ -102,6 +102,29 @@ export function RegisterForm() {
           {isPending && <Loader2 className="size-4 animate-spin" aria-hidden />}
           {t("submit")}
         </Button>
+
+        {/* Stated at the point of signing up, where it is actually read, and
+            with both documents one tap away rather than named in passing. */}
+        <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          {t.rich("legalConsent", {
+            terms: (chunks) => (
+              <Link
+                href="/terms"
+                className="underline underline-offset-2 hover:text-primary"
+              >
+                {chunks}
+              </Link>
+            ),
+            privacy: (chunks) => (
+              <Link
+                href="/privacy"
+                className="underline underline-offset-2 hover:text-primary"
+              >
+                {chunks}
+              </Link>
+            ),
+          })}
+        </p>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">

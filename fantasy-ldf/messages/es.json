@@ -35,7 +35,8 @@
       "orEmail": "o con tu correo",
       "hasAccount": "¿Ya tienes cuenta?",
       "loginLink": "Inicia sesión",
-      "checkEmail": "Revisa tu correo para confirmar tu cuenta. Si ya tenías una con ese correo, inicia sesión o recupera tu contraseña."
+      "checkEmail": "Revisa tu correo para confirmar tu cuenta. Si ya tenías una con ese correo, inicia sesión o recupera tu contraseña.",
+      "legalConsent": "Al crear tu cuenta aceptas los <terms>términos del servicio</terms> y la <privacy>política de privacidad</privacy>."
     },
     "reset": {
       "title": "Recuperar contraseña",
@@ -434,11 +435,35 @@
   "more": {
     "rules": "Reglas del juego",
     "language": "Idioma",
-    "soon": "Pronto",
     "admin": "Panel de administración",
     "signOutTitle": "¿Cerrar sesión?",
     "signOutBody": "Tendrás que iniciar sesión de nuevo para gestionar tu equipo.",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "privacy": "Política de privacidad",
+    "terms": "Términos del servicio",
+    "dangerZone": "Zona de riesgo",
+    "deleteAccount": {
+      "hint": "Eliminar tu cuenta borra tu perfil, tu equipo, tus alineaciones y tus fichajes. No se puede deshacer.",
+      "trigger": "Eliminar mi cuenta",
+      "title": "¿Eliminar tu cuenta?",
+      "body": "Se borran tu perfil, tu equipo, tu plantilla, tus alineaciones, tus fichajes y tus membresías de liga. Una liga privada que hayas creado pasa a quien se unió primero, o se elimina si eras el único. Esto no se puede deshacer.",
+      "confirmLabel": "Escribe {word} para confirmar",
+      "confirmWord": "ELIMINAR",
+      "confirm": "Eliminar para siempre",
+      "cancel": "Cancelar",
+      "failed": "No se pudo eliminar la cuenta. Intenta de nuevo."
+    }
+  },
+  "legal": {
+    "back": "Volver",
+    "updated": "Última actualización: {date}",
+    "cookies": {
+      "title": "Cookies",
+      "body": "Usamos las cookies que la aplicación necesita para mantenerte conectado y recordar tu idioma. Los informes de error son opcionales y solo se activan si los aceptas.",
+      "readMore": "Leer la política de privacidad",
+      "essential": "Solo las necesarias",
+      "acceptAll": "Aceptar todas"
+    }
   },
   "rules": {
     "title": "Reglas del juego",

@@ -78,6 +78,10 @@ const PUBLIC_PATHS = [
   "/reset-password",
   "/auth",
   "/api/sentry-check",
+  // The register screen links to both before anyone has an account, and a
+  // policy you have to sign in to read is not a published policy.
+  "/privacy",
+  "/terms",
   // An error on the login page is as worth reporting as any other; requiring a
   // session here would bounce exactly those reports to /login.
   TUNNEL_PATH,

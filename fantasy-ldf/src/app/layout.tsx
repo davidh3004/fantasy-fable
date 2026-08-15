@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Chakra_Petch, Russo_One } from "next/font/google";
+import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
+import { CookieBanner } from "@/components/legal/cookie-banner";
+import { CONSENT_COOKIE, isConsentChoice } from "@/lib/consent";
 import { APP_NAME, SITE_URL } from "@/lib/config";
 import "./globals.css";
 
@@ -45,6 +48,9 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const cookieStore = await cookies();
+  const stored = cookieStore.get(CONSENT_COOKIE)?.value;
+  const consent = isConsentChoice(stored) ? stored : null;
 
   return (
     <html
@@ -55,6 +61,9 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           {children}
           <Toaster />
+          {/* Read on the server so the banner never flashes for someone who
+              already answered it. */}
+          <CookieBanner initialChoice={consent} />
         </NextIntlClientProvider>
       </body>
     </html>

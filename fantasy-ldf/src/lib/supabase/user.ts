@@ -31,6 +31,12 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return {
     id: claims.sub,
     email,
+    /**
+     * The email fallback is safe *here* and only here: this name is rendered
+     * back to the person it belongs to — the greeting in the shell and their
+     * own settings screen. The public name is `profiles.display_name`, which
+     * is written at onboarding and deliberately never derived from an address.
+     */
     displayName:
       (meta.display_name as string | undefined) ??
       (meta.name as string | undefined) ??
