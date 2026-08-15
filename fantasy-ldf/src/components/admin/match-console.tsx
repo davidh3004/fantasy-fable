@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftRight,
+  CalendarClock,
   CircleDot,
   Loader2,
   RotateCcw,
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 import {
   reopenMatch,
   saveMatchProgress,
+  setFixtureStatus,
   type LiveStatLine,
 } from "@/app/(app)/admin/actions";
 import {
@@ -90,9 +92,21 @@ const emptyLine = (playerId: string): LiveStatLine => ({
 const selectClass =
   "h-10 w-full cursor-pointer rounded-lg border border-border bg-card px-2.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50";
 
+const STATE_BADGE: Record<"scheduled" | "live" | "finished", string> = {
+  scheduled: "bg-yellow-400/15 text-yellow-300",
+  live: "bg-destructive text-white",
+  finished: "bg-emerald-400/15 text-emerald-300",
+};
+
 type MatchConsoleProps = {
   fixtureId: string;
   kickoff: string; // ISO
+  /** Formatted for display, so the console can say when it goes live by itself. */
+  kickoffLabel: string;
+  /** The stored column — "scheduled" means nothing was overridden. */
+  storedStatus: "scheduled" | "live" | "finished";
+  /** What the app actually shows, kickoff taken into account. */
+  effectiveStatus: "scheduled" | "live" | "finished";
   isFinished: boolean;
   homeName: string;
   awayName: string;
@@ -110,6 +124,9 @@ type MatchConsoleProps = {
 export function MatchConsole({
   fixtureId,
   kickoff,
+  kickoffLabel,
+  storedStatus,
+  effectiveStatus,
   isFinished,
   homeName,
   awayName,
@@ -281,6 +298,18 @@ export function MatchConsole({
     });
   }
 
+  function changeStatus(next: "scheduled" | "live") {
+    startTransition(async () => {
+      const result = await setFixtureStatus(fixtureId, next);
+      if (result.error) {
+        toast.error(t(`errors.${result.error}`));
+        return;
+      }
+      toast.success(t(next === "live" ? "markedLive" : "markedScheduled"));
+      router.refresh();
+    });
+  }
+
   function handleReopen() {
     startTransition(async () => {
       const result = await reopenMatch(fixtureId);
@@ -324,6 +353,62 @@ export function MatchConsole({
           className="h-12 w-14 text-center font-heading text-xl tabular-nums"
         />
         <span className="min-w-0 flex-1 truncate font-medium">{awayName}</span>
+      </section>
+
+      {/* Match state — what the rest of the app is showing for this fixture */}
+      <section className="flex flex-col gap-2.5 rounded-xl border border-border bg-card p-3.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-heading text-base">{t("stateTitle")}</h2>
+          <span
+            className={cn(
+              "rounded-md px-2 py-0.5 text-xs font-semibold uppercase",
+              STATE_BADGE[effectiveStatus]
+            )}
+          >
+            {t(`state.${effectiveStatus}`)}
+          </span>
+          {/* Says so out loud, because the badge alone can't distinguish a
+              match that is live because kickoff passed from one an admin put
+              there by hand — and only the second one can be taken back. */}
+          {effectiveStatus === "live" && (
+            <span className="text-xs text-muted-foreground">
+              {storedStatus === "live" ? t("liveManual") : t("liveByKickoff")}
+            </span>
+          )}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          {t("stateHint", { kickoff: kickoffLabel })}
+        </p>
+
+        {!isFinished && (
+          <div className="flex flex-wrap gap-2">
+            {storedStatus !== "live" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => changeStatus("live")}
+                disabled={isPending}
+                className="h-10 cursor-pointer"
+              >
+                <CircleDot className="size-4" aria-hidden />
+                {t("markLive")}
+              </Button>
+            )}
+            {storedStatus === "live" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => changeStatus("scheduled")}
+                disabled={isPending}
+                className="h-10 cursor-pointer"
+              >
+                <CalendarClock className="size-4" aria-hidden />
+                {t("clearLive")}
+              </Button>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Match clock */}

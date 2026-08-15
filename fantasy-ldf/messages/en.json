@@ -598,8 +598,22 @@
       "errors": {
         "forbidden": "You don't have admin permissions.",
         "validation": "Check the score and stats.",
+        "already_published": "The match is published. Reopen it to change its state.",
         "unknown": "Something went wrong. Try again."
       },
+      "stateTitle": "Match state",
+      "state": {
+        "scheduled": "Scheduled",
+        "live": "Live",
+        "finished": "Finished"
+      },
+      "stateHint": "It goes live on its own at kick-off ({kickoff}). Saving a lineup or your progress doesn't make it live. Publishing the result is what closes it.",
+      "liveByKickoff": "from kick-off",
+      "liveManual": "set by hand",
+      "markLive": "Mark as live",
+      "clearLive": "Undo live",
+      "markedLive": "Match is live.",
+      "markedScheduled": "Manual live removed.",
       "tabs": {
         "lineups": "Lineups",
         "live": "Live",

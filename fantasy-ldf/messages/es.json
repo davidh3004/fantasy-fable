@@ -598,8 +598,22 @@
       "errors": {
         "forbidden": "No tienes permisos de administrador.",
         "validation": "Revisa el marcador y las estadísticas.",
+        "already_published": "El partido está publicado. Reábrelo para cambiarle el estado.",
         "unknown": "Algo salió mal. Intenta de nuevo."
       },
+      "stateTitle": "Estado del partido",
+      "state": {
+        "scheduled": "Programado",
+        "live": "En vivo",
+        "finished": "Finalizado"
+      },
+      "stateHint": "Se pone en vivo solo al llegar la hora de inicio ({kickoff}). Guardar la alineación o el avance no lo pone en vivo. Publicar el resultado es lo que lo cierra.",
+      "liveByKickoff": "por la hora de inicio",
+      "liveManual": "puesto a mano",
+      "markLive": "Poner en vivo",
+      "clearLive": "Quitar en vivo",
+      "markedLive": "Partido en vivo.",
+      "markedScheduled": "Se quitó el en vivo manual.",
       "tabs": {
         "lineups": "Alineaciones",
         "live": "En vivo",

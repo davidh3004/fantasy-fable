@@ -666,7 +666,18 @@ export async function saveMatchProgress(
         .set({
           homeScore,
           awayScore,
-          status: publish ? "finished" : "live",
+          /**
+           * Saving progress no longer touches the status. It used to write
+           * "live" on every save, so filling in a starting eleven the night
+           * before a match put it on the pitch for the whole app: red LIVE
+           * ribbons, gold player cards, live points. Worse, an explicit "live"
+           * is an override that beats the kickoff time, so the match stayed
+           * live until somebody published it.
+           *
+           * A match goes live on its own once kickoff passes, or when an admin
+           * says so. Publishing is still what closes it.
+           */
+          ...(publish ? { status: "finished" as const } : {}),
         })
         .where(eq(fixtures.id, fixtureId));
     });
@@ -678,15 +689,64 @@ export async function saveMatchProgress(
   return ok;
 }
 
+/**
+ * Moves a match between scheduled and live by hand.
+ *
+ * Kickoff drives this on its own — a scheduled match reads as live from its
+ * kickoff time without anyone touching it — so this is for the cases the clock
+ * can't know about: a match that starts early, one that is delayed, or one an
+ * admin wants on the app's live screens ahead of time.
+ *
+ * "Scheduled" clears the override rather than forcing the match off the live
+ * screens: if kickoff has already passed it still reads live, which is what a
+ * postponement needs the kickoff moved for.
+ *
+ * Finished is deliberately not settable here. It is what Publish writes, and
+ * only Publish also writes the results the gameweek is scored from; a match
+ * flipped to finished with no stats would let the gameweek be finalized with
+ * everyone in it on zero. Reopen is the way back.
+ */
+export async function setFixtureStatus(
+  fixtureId: string,
+  status: "scheduled" | "live"
+): Promise<AdminActionState> {
+  if (!(await requireAdminAction())) return fail("forbidden");
+  if (status !== "scheduled" && status !== "live") return fail("validation");
+
+  const [fixture] = await db
+    .select({ status: fixtures.status })
+    .from(fixtures)
+    .where(eq(fixtures.id, fixtureId))
+    .limit(1);
+  if (!fixture) return fail("validation");
+  if (fixture.status === "finished") return fail("already_published");
+
+  try {
+    await db
+      .update(fixtures)
+      .set({ status })
+      .where(eq(fixtures.id, fixtureId));
+  } catch (err) {
+    return dbFailure("setFixtureStatus", err);
+  }
+  revalidateAll();
+  return ok;
+}
+
 /** Reopens a published match for corrections. */
 export async function reopenMatch(
   fixtureId: string
 ): Promise<AdminActionState> {
   if (!(await requireAdminAction())) return fail("forbidden");
   try {
+    // Cleared rather than set to live: reopening removes the closed flag and
+    // lets kickoff decide again. In practice a reopened match has already
+    // kicked off and so still reads live — results pending — but a match
+    // reopened before kickoff goes back to scheduled instead of being stuck on
+    // an override nobody set.
     await db
       .update(fixtures)
-      .set({ status: "live" })
+      .set({ status: "scheduled" })
       .where(eq(fixtures.id, fixtureId));
   } catch (err) {
     return dbFailure("reopenMatch", err);
