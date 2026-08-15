@@ -6,12 +6,14 @@ import {
   CalendarDays,
   ChevronRight,
   Languages,
+  Scale,
   ShieldCheck,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getSessionUser } from "@/lib/supabase/user";
 import { isAdminUser } from "@/lib/admin";
 import { SignOutButton } from "@/components/more/sign-out-button";
+import { DeleteAccountButton } from "@/components/more/delete-account-button";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -74,6 +76,22 @@ export default async function MorePage() {
           <span className="flex-1 text-sm font-medium">{t("rules")}</span>
           <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
         </Link>
+        <Link
+          href="/privacy"
+          className="flex items-center gap-3 border-b border-border px-4 py-3.5 transition-colors hover:bg-accent"
+        >
+          <ShieldCheck className="size-4.5 text-muted-foreground" aria-hidden />
+          <span className="flex-1 text-sm font-medium">{t("privacy")}</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
+        <Link
+          href="/terms"
+          className="flex items-center gap-3 border-b border-border px-4 py-3.5 transition-colors hover:bg-accent"
+        >
+          <Scale className="size-4.5 text-muted-foreground" aria-hidden />
+          <span className="flex-1 text-sm font-medium">{t("terms")}</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
         <div className="flex items-center gap-3 px-4 py-3.5">
           <Languages className="size-4.5 shrink-0 text-muted-foreground" aria-hidden />
           <span className="min-w-0 flex-1 truncate text-sm font-medium">
@@ -86,6 +104,18 @@ export default async function MorePage() {
       <div className="mt-6">
         <SignOutButton />
       </div>
+
+      {/* Kept apart from everything else and last on the page: an irreversible
+          action shouldn't sit next to the language picker. */}
+      <section className="mt-8 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+        <h2 className="font-heading text-base text-destructive">
+          {t("dangerZone")}
+        </h2>
+        <p className="mt-1 mb-3 text-xs text-muted-foreground">
+          {t("deleteAccount.hint")}
+        </p>
+        <DeleteAccountButton confirmWord={t("deleteAccount.confirmWord")} />
+      </section>
     </main>
   );
 }

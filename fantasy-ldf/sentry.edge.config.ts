@@ -8,4 +8,7 @@ Sentry.init({
   enabled: Boolean(dsn),
   environment: process.env.NODE_ENV,
   tracesSampleRate: 0,
+  // Same rule as the server: report the fault, not the person. See
+  // sentry.server.config.ts.
+  sendDefaultPii: false,
 });

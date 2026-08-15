@@ -35,7 +35,8 @@
       "orEmail": "or with your email",
       "hasAccount": "Already have an account?",
       "loginLink": "Sign in",
-      "checkEmail": "Check your email to confirm your account. If you already had one with that address, sign in or reset your password."
+      "checkEmail": "Check your email to confirm your account. If you already had one with that address, sign in or reset your password.",
+      "legalConsent": "By creating an account you accept the <terms>terms of service</terms> and the <privacy>privacy policy</privacy>."
     },
     "reset": {
       "title": "Reset password",
@@ -434,11 +435,35 @@
   "more": {
     "rules": "Game rules",
     "language": "Language",
-    "soon": "Soon",
     "admin": "Admin panel",
     "signOutTitle": "Sign out?",
     "signOutBody": "You'll need to sign in again to manage your team.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "privacy": "Privacy policy",
+    "terms": "Terms of service",
+    "dangerZone": "Danger zone",
+    "deleteAccount": {
+      "hint": "Deleting your account removes your profile, your team, your lineups and your transfers. It cannot be undone.",
+      "trigger": "Delete my account",
+      "title": "Delete your account?",
+      "body": "Your profile, team, squad, lineups, transfers and league memberships will be erased. A private league you created is handed to whoever joined it first, or deleted if you were the only one in it. This cannot be undone.",
+      "confirmLabel": "Type {word} to confirm",
+      "confirmWord": "DELETE",
+      "confirm": "Delete for ever",
+      "cancel": "Cancel",
+      "failed": "Couldn't delete the account. Try again."
+    }
+  },
+  "legal": {
+    "back": "Back",
+    "updated": "Last updated: {date}",
+    "cookies": {
+      "title": "Cookies",
+      "body": "We use the cookies the app needs to keep you signed in and remember your language. Error reports are optional and only run if you accept them.",
+      "readMore": "Read the privacy policy",
+      "essential": "Essential only",
+      "acceptAll": "Accept all"
+    }
   },
   "rules": {
     "title": "Game rules",
